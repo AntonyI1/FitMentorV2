@@ -19,7 +19,7 @@ Evidence-based fitness coaching app. All requirements are in `/docs/PRD.md`. Rea
 Define and document a new feature. Do not write implementation code.
 
 1. Read PRD.md for context
-2. Create `/docs/features/.md` with:
+2. Create `/docs/features/<name>.md` with:
    - Overview (2-3 sentences)
    - User stories
    - Acceptance criteria (measurable)
@@ -30,13 +30,13 @@ Define and document a new feature. Do not write implementation code.
 
 ---
 
-### /plan
+### /blueprint
 
-Create implementation plan. Requires existing feature doc at `/docs/features/.md`. Do not write implementation code.
+Create implementation plan. Requires existing feature doc at `/docs/features/<name>.md`. Do not write implementation code.
 
 1. Read the feature document
 2. Analyze codebase for integration points
-3. Create `/docs/plans/-plan.md` with:
+3. Create `/docs/plans/<name>-plan.md` with:
    - Phases (ordered steps)
    - Files to create/modify
    - Data models or schema changes
@@ -51,8 +51,8 @@ Create implementation plan. Requires existing feature doc at `/docs/features/.md
 ### /implement
 
 Execute the plan. Requires both:
-- `/docs/features/.md`
-- `/docs/plans/-plan.md`
+- `/docs/features/<name>.md`
+- `/docs/plans/<name>-plan.md`
 
 1. Read both documents
 2. Follow phases in order

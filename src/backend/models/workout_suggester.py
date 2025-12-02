@@ -14,6 +14,13 @@ GOAL_PARAMS = {
     "weight_loss": {"reps": "12-15", "sets": 3, "rest": 60, "rir": 1},
 }
 
+# Exercises per muscle group based on experience (Jeff Nippard style)
+VOLUME_PER_MUSCLE = {
+    "beginner": 2,      # 1-2 exercises per muscle group
+    "intermediate": 2,  # 2 exercises per muscle group
+    "advanced": 3,      # 3 exercises per muscle group
+}
+
 EXPERIENCE_MULTIPLIERS = {
     "beginner": 0.85,
     "intermediate": 1.0,
@@ -122,7 +129,7 @@ def validate_input(data):
         raise ValidationError("session_duration must be an integer between 30 and 120")
 
 
-def select_exercises_for_muscle_group(muscle_group, available_exercises, goal, count=2):
+def select_exercises_for_muscle_group(muscle_group, available_exercises, count):
     """Select exercises for a muscle group from available exercises."""
     muscle_exercises = [e for e in available_exercises if e["muscle_group"] == muscle_group]
 
@@ -134,37 +141,64 @@ def select_exercises_for_muscle_group(muscle_group, available_exercises, goal, c
     isolations = [e for e in muscle_exercises if e["type"] == "isolation"]
 
     selected = []
-    if compounds:
-        selected.append(compounds[0])
-    if isolations and len(selected) < count:
-        selected.append(isolations[0])
 
-    while len(selected) < count and len(selected) < len(muscle_exercises):
-        for e in muscle_exercises:
-            if e not in selected:
-                selected.append(e)
-                break
+    # Prioritize compounds first
+    for ex in compounds:
+        if len(selected) >= count:
+            break
+        if ex not in selected:
+            selected.append(ex)
+
+    # Fill with isolations
+    for ex in isolations:
+        if len(selected) >= count:
+            break
+        if ex not in selected:
+            selected.append(ex)
+
+    # If still need more, add any remaining
+    for ex in muscle_exercises:
+        if len(selected) >= count:
+            break
+        if ex not in selected:
+            selected.append(ex)
 
     return selected[:count]
 
 
-def build_workout_day(day_info, available_exercises, goal_params, experience):
-    """Build a single workout day."""
+def get_muscle_groups_for_day(day_info, gender):
+    """Get muscle groups for a workout day, adjusted for gender."""
+    groups = day_info["muscle_groups"].copy()
+
+    # Female: add glutes on leg/lower days
+    if gender == "female" and "legs" in groups:
+        if "glutes" not in groups:
+            groups.append("glutes")
+
+    return groups
+
+
+def build_workout_day(day_info, available_exercises, goal_params, experience, gender):
+    """Build a single workout day with proper volume per muscle group."""
     exercises = []
     volume_mult = EXPERIENCE_MULTIPLIERS[experience]
 
-    exercise_counts = {
-        "chest": 2, "back": 2, "legs": 3, "shoulders": 2,
-        "biceps": 1, "triceps": 1, "core": 1,
-    }
+    # Get muscle groups adjusted for gender
+    muscle_groups = get_muscle_groups_for_day(day_info, gender)
 
-    for muscle_group in day_info["muscle_groups"]:
-        count = exercise_counts.get(muscle_group, 2)
-        if len(day_info["muscle_groups"]) > 5:
-            count = 1
+    # Determine exercises per muscle based on experience
+    base_count = VOLUME_PER_MUSCLE[experience]
 
+    # For full body days (many muscles), reduce count to avoid excessive volume
+    is_full_body = len(muscle_groups) >= 6
+    if is_full_body:
+        count_per_muscle = 1 if experience == "beginner" else 2
+    else:
+        count_per_muscle = base_count
+
+    for muscle_group in muscle_groups:
         selected = select_exercises_for_muscle_group(
-            muscle_group, available_exercises, goal_params, count
+            muscle_group, available_exercises, count_per_muscle
         )
 
         for exercise in selected:
@@ -185,7 +219,7 @@ def build_workout_day(day_info, available_exercises, goal_params, experience):
 
     return {
         "day": day_info["name"],
-        "muscle_groups": day_info["muscle_groups"],
+        "muscle_groups": muscle_groups,
         "exercises": exercises,
     }
 
@@ -207,7 +241,8 @@ def suggest(data):
     workouts = []
     for day_info in split["days"]:
         workout = build_workout_day(
-            day_info, available_exercises, goal_params, data["experience"]
+            day_info, available_exercises, goal_params,
+            data["experience"], data["gender"]
         )
         workouts.append(workout)
 

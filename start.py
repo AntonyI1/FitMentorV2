@@ -30,18 +30,13 @@ print("\nPress Ctrl+C to stop\n")
 backend = subprocess.Popen(
     [sys.executable, "-c",
      f"import sys; sys.path.insert(0, '{BACKEND_DIR}'); from app import app; app.run(port=5000)"],
-    stdout=subprocess.DEVNULL,
-    stderr=subprocess.DEVNULL
 )
 processes.append(backend)
 
 # Start frontend
 frontend = subprocess.Popen(
     [sys.executable, "-m", "http.server", "8000", "--directory", FRONTEND_DIR],
-    stdout=subprocess.DEVNULL,
-    stderr=subprocess.DEVNULL
 )
-processes.append(frontend)
 
 time.sleep(1)
 print("Ready! Open http://localhost:8000")

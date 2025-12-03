@@ -246,9 +246,9 @@ function handleUnitToggle(e) {
         hide('#height-metric');
         show($('.height-imperial'));
         weightLabel.textContent = 'Weight (lbs)';
-        weightInput.placeholder = '88-440';
+        weightInput.placeholder = '88-500';
         weightInput.min = 88;
-        weightInput.max = 440;
+        weightInput.max = 500;
         heightInput.removeAttribute('required');
         heightFt.setAttribute('required', '');
         heightIn.setAttribute('required', '');
@@ -260,9 +260,9 @@ function handleUnitToggle(e) {
         show('#height-metric');
         hide($('.height-imperial'));
         weightLabel.textContent = 'Weight (kg)';
-        weightInput.placeholder = '40-200';
+        weightInput.placeholder = '40-230';
         weightInput.min = 40;
-        weightInput.max = 200;
+        weightInput.max = 230;
         heightInput.setAttribute('required', '');
         heightFt.removeAttribute('required');
         heightIn.removeAttribute('required');

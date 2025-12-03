@@ -14,17 +14,17 @@ Single-page web application providing the user interface for FitMentor's calorie
 
 ## Acceptance Criteria
 
-- [ ] Page loads and displays hero section with CTAs
-- [ ] Calorie calculator form validates all inputs before submission
-- [ ] Unit toggle switches between metric (kg/cm) and imperial (lbs/ft-in)
-- [ ] Calculator displays BMR, TDEE, target calories, and macro breakdown
-- [ ] Macro cards show grams, calories, and percentages
-- [ ] Workout planner form accepts all required inputs
-- [ ] Equipment selection allows multiple choices
-- [ ] Workout plan displays split, daily exercises, sets/reps/rest
-- [ ] Exercise cards are clickable to show details in modal
-- [ ] All API errors display user-friendly messages
-- [ ] Responsive design works on mobile and desktop
+- [x] Page loads and displays hero section with CTAs
+- [x] Calorie calculator form validates all inputs before submission
+- [x] Unit toggle switches between metric (kg/cm) and imperial (lbs/ft-in)
+- [x] Calculator displays BMR, TDEE, target calories, and macro breakdown
+- [x] Macro cards show grams, calories, and percentages
+- [x] Workout planner form accepts all required inputs
+- [x] Equipment selection allows multiple choices
+- [x] Workout plan displays split, daily exercises, sets/reps/rest
+- [x] Exercise cards are clickable to show details in modal
+- [x] All API errors display user-friendly messages
+- [x] Responsive design works on mobile and desktop
 
 ## Technical Requirements
 

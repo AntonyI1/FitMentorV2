@@ -58,11 +58,13 @@ Generates multi-day workout plans based on user parameters and proven training s
 
 ### 3. Exercise Database
 
-38 exercises across 7 muscle groups with metadata:
-- Name, muscle group, subcategory
+120+ exercises across 5 major muscle groups with evidence-based metadata:
+- Name, muscle group, sub-region (e.g., upper chest, biceps long head)
 - Equipment requirements
-- Difficulty level
+- Difficulty level (easy/medium/hard)
 - Exercise type (compound/isolation)
+- Nippard tier rankings (S+ through D)
+- Research notes and EMG data
 - Rest period recommendations
 
 ---
@@ -75,7 +77,6 @@ Generates multi-day workout plans based on user parameters and proven training s
 |------------|---------|
 | Python 3.8+ | Core language |
 | Flask 3.0.0 | Web framework |
-| flask-cors 4.0.0 | CORS handling |
 
 ### Frontend
 
@@ -99,24 +100,42 @@ Generates multi-day workout plans based on user parameters and proven training s
 
 ```
 FitMentor/
-├── backend/
-│   ├── app.py                      # Flask API server
-│   ├── models/
-│   │   ├── calorie_calculator.py   # Calorie/macro calculation
-│   │   ├── workout_suggester.py    # Workout plan generation
-│   │   └── data_collector.py       # Data persistence
-│   └── data/
-│       ├── calorie_calculations.jsonl
-│       └── workout_plans.jsonl
-├── frontend/
-│   ├── index.html
-│   ├── js/
-│   │   └── app.js
-│   ├── css/
-│   │   └── styles.css
-│   └── images/
-│       └── exercises/
+├── src/
+│   ├── backend/
+│   │   ├── app.py                      # Flask API server
+│   │   ├── models/
+│   │   │   ├── calorie_calculator.py   # Calorie/macro calculation
+│   │   │   ├── workout_suggester.py    # Workout plan generation
+│   │   │   ├── workout_generator.py    # Exercise selection logic
+│   │   │   ├── exercises.py            # Exercise database wrapper
+│   │   │   ├── exercise_query.py       # Query interface
+│   │   │   ├── movement_patterns.py    # Movement pattern definitions
+│   │   │   ├── data_collector.py       # Data persistence
+│   │   │   └── exercise_data/          # Evidence-based exercise database
+│   │   │       ├── __init__.py
+│   │   │       ├── chest.py
+│   │   │       ├── back.py
+│   │   │       ├── shoulders.py
+│   │   │       ├── arms.py
+│   │   │       └── legs.py
+│   │   └── data/
+│   │       ├── calorie_calculations.jsonl
+│   │       └── workout_plans.jsonl
+│   └── frontend/
+│       ├── index.html
+│       ├── js/
+│       │   └── app.js
+│       └── css/
+│           └── styles.css
+├── docs/
+│   ├── PRD.md
+│   ├── features/
+│   └── plans/
+├── tests/
+│   └── test_workout_generator.py
+├── start.py                            # Server startup script
 ├── requirements.txt
+├── CLAUDE.md
 └── README.md
 ```
 
@@ -318,7 +337,6 @@ Female: BMR = 10 × weight(kg) + 6.25 × height(cm) - 5 × age - 161
 
 ```
 Flask==3.0.0
-flask-cors==4.0.0
 ```
 
 ---
@@ -327,28 +345,28 @@ flask-cors==4.0.0
 
 ### Muscle Groups
 
-| Group | Count | Categories |
-|-------|-------|------------|
-| Chest | 8 | flat_press, incline_press, chest_fly, dip |
-| Back | 6 | vertical_pull, horizontal_pull, isolation |
-| Legs | 11 | squat, hip_hinge, quad_iso, hamstring_iso, unilateral |
-| Shoulders | 5 | overhead_press, lateral_delt, rear_delt |
-| Biceps | 3 | bicep_curl |
-| Triceps | 3 | tricep_extension, tricep_press |
-| Core | 2 | core |
+| Group | Count | Sub-regions |
+|-------|-------|-------------|
+| Chest | 25 | upper_chest, mid_chest, lower_chest |
+| Back | 30 | upper_back, lats, lower_back |
+| Shoulders | 26 | front_delt, side_delt, rear_delt |
+| Arms | 31 | biceps_short_head, biceps_long_head, triceps_lateral_medial, triceps_long_head |
+| Legs | 35 | quadriceps, hamstrings, glutes |
 
 ### Exercise Schema
 
 ```json
 {
-  "id": 1,
-  "name": "Barbell Bench Press",
+  "id": "incline-barbell-bench-press",
+  "name": "Incline Barbell Bench Press",
   "muscle_group": "chest",
-  "subcategory": "mid_chest",
+  "sub_region": "upper_chest",
   "equipment": ["barbell", "bench", "rack"],
-  "difficulty": "intermediate",
+  "difficulty": "medium",
   "type": "compound",
-  "category": "flat_press",
+  "targets": ["upper_pec", "anterior_deltoid", "triceps"],
+  "nippard_tier": "A",
+  "research_notes": "EMG peaks at 30° incline (~30% MVIC)",
   "rest": 120
 }
 ```

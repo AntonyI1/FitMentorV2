@@ -143,17 +143,3 @@ Modal elements:
 4. **No exercises match equipment** - Backend falls back to bodyweight exercises
 5. **Empty exercises cache** - Modal shows without full details (graceful degradation)
 
-## Known Bug (Root Cause)
-
-The current implementation has duplicate `id="workout-days"`:
-- Line 188 in index.html: `<select id="workout-days" ...>` (form input)
-- Line 253 in index.html: `<div ... id="workout-days">` (results container)
-
-When `renderWorkoutPlan()` queries `$('#workout-days')`, it finds the SELECT first and replaces its innerHTML with workout cards, destroying the form element. This causes:
-1. Days per week dropdown becomes unusable
-2. Form submission fails on retry
-3. Button appears disabled
-
-**Fix:** Rename IDs to be unique:
-- Select: `id="workout-days-select"`
-- Container: `id="workout-days-list"`

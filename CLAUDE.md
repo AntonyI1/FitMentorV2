@@ -72,6 +72,38 @@ Rules:
 
 ---
 
+### /bug
+
+Investigate a bug from a description.
+
+1. Understand expected vs actual behavior
+2. Search codebase for related keywords
+3. Identify relevant code paths (UI, state, handlers)
+4. Trace data flow
+5. Output summary:
+   - Bug description (one line)
+   - Relevant files
+   - Likely cause
+   - Where to start investigating
+
+---
+
+### /debug
+
+Fix a bug from a previous /bug investigation.
+
+1. Review the /bug investigation
+2. Confirm hypothesis by reading files
+3. Implement minimal fix following existing patterns
+4. Verify fix doesn't break other functionality
+5. Output summary:
+   - Root cause
+   - Fix applied
+   - Files modified
+   - Testing notes
+
+---
+
 ## Code Standards
 
 - Self-documenting code; comments explain why, not what
@@ -87,3 +119,8 @@ Rules:
 4. Ask for clarification
 
 Do not assume. Do not improvise requirements.
+
+## Git Commits
+
+- Commit as the user (no Claude co-author or generated-by tags)
+- Write concise commit messages describing what changed and why

@@ -1,14 +1,14 @@
 # Backend API - Implementation Plan
 
-## Phase 1: Project Setup
+## Phase 1: Project Setup ✓
 
-**Files to create:**
-- `run.py` (project root) - Single entry point
+**Files created:**
+- `start.py` (project root) - Starts both backend and frontend servers
 - `requirements.txt` (project root) - Dependencies
 
-**Tasks:**
-1. Create `run.py` that imports and runs the Flask app
-2. Create `requirements.txt` with Flask and flask-cors
+**Tasks (completed):**
+1. Created `start.py` that starts Flask backend and Python HTTP server for frontend
+2. Created `requirements.txt` with Flask
 
 ## Phase 2: Exercise Database
 

@@ -13,15 +13,15 @@ Flask-based REST API server that provides calorie calculation and workout plan g
 
 ## Acceptance Criteria
 
-- [ ] Server starts on port 5000 with `python run.py` from project root
-- [ ] GET `/` returns API info and version
-- [ ] POST `/api/calculate-calories` accepts valid input and returns BMR, TDEE, target calories, and macros
-- [ ] POST `/api/suggest-workout` accepts valid input and returns split, workouts, and progression
-- [ ] GET `/api/exercises` returns the complete exercise database
-- [ ] GET `/api/stats` returns data collection statistics
-- [ ] Invalid requests return appropriate error responses (400)
-- [ ] CORS is enabled for frontend integration
-- [ ] All calculations are logged to JSONL files
+- [x] Server starts on port 5000 with `python start.py` from project root
+- [x] GET `/` returns API info and version
+- [x] POST `/api/calculate-calories` accepts valid input and returns BMR, TDEE, target calories, and macros
+- [x] POST `/api/suggest-workout` accepts valid input and returns split, workouts, and progression
+- [x] GET `/api/exercises` returns the complete exercise database
+- [x] GET `/api/stats` returns data collection statistics
+- [x] Invalid requests return appropriate error responses (400)
+- [x] CORS is enabled for frontend integration (manual headers)
+- [x] All calculations are logged to JSONL files
 
 ## Technical Requirements
 

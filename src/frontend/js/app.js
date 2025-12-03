@@ -3,6 +3,10 @@ const API_URL = 'http://localhost:5000';
 let currentUnit = 'metric';
 let exercisesCache = [];
 
+// Store values separately for each unit system
+let metricValues = { height: '', weight: '' };
+let imperialValues = { heightFt: '', heightIn: '', weight: '' };
+
 // Unit conversion
 function lbsToKg(lbs) {
     return lbs / 2.205;
@@ -217,23 +221,27 @@ function handleUnitToggle(e) {
     $$('.unit-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
 
-    // Convert existing values
     const heightInput = $('#calc-height');
     const heightFt = $('#calc-height-ft');
     const heightIn = $('#calc-height-in');
     const weightInput = $('#calc-weight');
     const weightLabel = $('#weight-label');
 
+    // Save current values before switching
+    if (currentUnit === 'metric') {
+        metricValues.height = heightInput.value;
+        metricValues.weight = weightInput.value;
+    } else {
+        imperialValues.heightFt = heightFt.value;
+        imperialValues.heightIn = heightIn.value;
+        imperialValues.weight = weightInput.value;
+    }
+
     if (unit === 'imperial') {
-        // Convert metric to imperial
-        if (heightInput.value) {
-            const { ft, in: inches } = cmToFtIn(parseFloat(heightInput.value));
-            heightFt.value = ft;
-            heightIn.value = inches;
-        }
-        if (weightInput.value) {
-            weightInput.value = Math.round(kgToLbs(parseFloat(weightInput.value)));
-        }
+        // Restore imperial values (empty if never entered)
+        heightFt.value = imperialValues.heightFt;
+        heightIn.value = imperialValues.heightIn;
+        weightInput.value = imperialValues.weight;
 
         hide('#height-metric');
         show($('.height-imperial'));
@@ -245,16 +253,9 @@ function handleUnitToggle(e) {
         heightFt.setAttribute('required', '');
         heightIn.setAttribute('required', '');
     } else {
-        // Convert imperial to metric
-        if (heightFt.value || heightIn.value) {
-            heightInput.value = Math.round(ftInToCm(
-                parseInt(heightFt.value) || 0,
-                parseInt(heightIn.value) || 0
-            ));
-        }
-        if (weightInput.value) {
-            weightInput.value = Math.round(lbsToKg(parseFloat(weightInput.value)));
-        }
+        // Restore metric values (empty if never entered)
+        heightInput.value = metricValues.height;
+        weightInput.value = metricValues.weight;
 
         show('#height-metric');
         hide($('.height-imperial'));

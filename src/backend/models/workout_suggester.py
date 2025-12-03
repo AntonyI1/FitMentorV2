@@ -1,11 +1,23 @@
-"""Workout plan generator based on user parameters and training principles."""
+"""Workout plan generator based on user parameters and training principles.
 
-from models.exercises import get_exercises_by_equipment, EXERCISES
+This module generates evidence-based workout plans with:
+- Intelligent exercise selection ensuring muscle head coverage
+- Movement pattern redundancy prevention
+- Tier-prioritized exercise selection (S+ > S > A+ > A > ...)
+- Experience-appropriate difficulty filtering
+"""
+
+from .workout_generator import ExerciseSelector, validate_workout, WORKOUT_CONSTRAINTS
+from .exercise_data import TIER_RANK
+from .movement_patterns import get_movement_pattern
 
 VALID_GENDERS = {"male", "female"}
 VALID_GOALS = {"strength", "hypertrophy", "endurance", "weight_loss"}
 VALID_EXPERIENCE = {"beginner", "intermediate", "advanced"}
-VALID_EQUIPMENT = {"barbell", "dumbbell", "machine", "cable", "bench", "rack", "pullup_bar", "bodyweight"}
+VALID_EQUIPMENT = {
+    "barbell", "dumbbell", "machine", "cable", "bench",
+    "rack", "pullup_bar", "bodyweight", "barbell_ez"
+}
 
 GOAL_PARAMS = {
     "strength": {"reps": "3-6", "sets": 4, "rest": 180, "rir": 1},
@@ -14,57 +26,185 @@ GOAL_PARAMS = {
     "weight_loss": {"reps": "12-15", "sets": 3, "rest": 60, "rir": 1},
 }
 
-# Exercises per muscle group based on experience (Jeff Nippard style)
-VOLUME_PER_MUSCLE = {
-    "beginner": 2,      # 1-2 exercises per muscle group
-    "intermediate": 2,  # 2 exercises per muscle group
-    "advanced": 3,      # 3 exercises per muscle group
-}
-
 EXPERIENCE_MULTIPLIERS = {
     "beginner": 0.85,
     "intermediate": 1.0,
     "advanced": 1.15,
 }
 
+# Gender-specific volume adjustments
+# Females: significantly more focus on legs/glutes, less on upper body pushing
+GENDER_VOLUME_ADJUSTMENTS = {
+    "male": {
+        "legs": 1.0,
+        "chest": 1.0,
+        "back": 1.0,
+        "shoulders": 1.0,
+        "arms": 1.0,
+    },
+    "female": {
+        "legs": 2.0,  # Double leg exercises for females
+        "chest": 0.5,  # Half the chest volume
+        "back": 1.0,  # Back remains important for posture
+        "shoulders": 0.5,  # Half the shoulder volume
+        "arms": 0.5,  # Half the arm volume
+    },
+}
+
+# Maximum exercises per workout by gender (females cap lower on push days)
+GENDER_MAX_EXERCISES = {
+    "male": {"push": 9, "pull": 9, "legs": 9, "upper": 9, "lower": 9, "full_body": 9},
+    "female": {"push": 6, "pull": 8, "legs": 9, "upper": 8, "lower": 9, "full_body": 9},
+}
+
+# Sub-regions to exclude by gender
+GENDER_EXCLUDED_SUBREGIONS = {
+    "male": ["glutes"],  # Males don't do dedicated glute work
+    "female": [],
+}
+
+# Split configurations with split_type for intelligent sub-region targeting
 SPLITS = {
     3: {
         "name": "Full Body 3x/week",
         "days": [
-            {"name": "Full Body A", "muscle_groups": ["chest", "back", "legs", "shoulders", "biceps", "triceps", "core"]},
-            {"name": "Full Body B", "muscle_groups": ["chest", "back", "legs", "shoulders", "biceps", "triceps", "core"]},
-            {"name": "Full Body C", "muscle_groups": ["chest", "back", "legs", "shoulders", "biceps", "triceps", "core"]},
+            {
+                "name": "Full Body A",
+                "split_type": "full_body",
+                "muscle_groups": ["chest", "back", "legs", "shoulders", "arms"],
+            },
+            {
+                "name": "Full Body B",
+                "split_type": "full_body",
+                "muscle_groups": ["chest", "back", "legs", "shoulders", "arms"],
+            },
+            {
+                "name": "Full Body C",
+                "split_type": "full_body",
+                "muscle_groups": ["chest", "back", "legs", "shoulders", "arms"],
+            },
         ],
     },
     4: {
         "name": "Upper/Lower 4x/week",
         "days": [
-            {"name": "Upper A", "muscle_groups": ["chest", "back", "shoulders", "biceps", "triceps"]},
-            {"name": "Lower A", "muscle_groups": ["legs", "core"]},
-            {"name": "Upper B", "muscle_groups": ["chest", "back", "shoulders", "biceps", "triceps"]},
-            {"name": "Lower B", "muscle_groups": ["legs", "core"]},
+            {
+                "name": "Upper A",
+                "split_type": "upper",
+                "muscle_groups": ["chest", "back", "shoulders", "arms"],
+            },
+            {
+                "name": "Lower A",
+                "split_type": "legs",
+                "muscle_groups": ["legs"],
+            },
+            {
+                "name": "Upper B",
+                "split_type": "upper",
+                "muscle_groups": ["chest", "back", "shoulders", "arms"],
+            },
+            {
+                "name": "Lower B",
+                "split_type": "legs",
+                "muscle_groups": ["legs"],
+            },
         ],
     },
     5: {
         "name": "Push/Pull/Legs 5x/week",
         "days": [
-            {"name": "Push", "muscle_groups": ["chest", "shoulders", "triceps"]},
-            {"name": "Pull", "muscle_groups": ["back", "biceps"]},
-            {"name": "Legs", "muscle_groups": ["legs", "core"]},
-            {"name": "Upper", "muscle_groups": ["chest", "back", "shoulders", "biceps", "triceps"]},
-            {"name": "Lower", "muscle_groups": ["legs", "core"]},
+            {
+                "name": "Push",
+                "split_type": "push",
+                "muscle_groups": ["chest", "shoulders", "arms"],
+            },
+            {
+                "name": "Pull",
+                "split_type": "pull",
+                "muscle_groups": ["back", "arms"],
+            },
+            {
+                "name": "Legs",
+                "split_type": "legs",
+                "muscle_groups": ["legs"],
+            },
+            {
+                "name": "Upper",
+                "split_type": "upper",
+                "muscle_groups": ["chest", "back", "shoulders", "arms"],
+            },
+            {
+                "name": "Lower",
+                "split_type": "legs",
+                "muscle_groups": ["legs"],
+            },
         ],
     },
     6: {
         "name": "Push/Pull/Legs 6x/week",
         "days": [
-            {"name": "Push A", "muscle_groups": ["chest", "shoulders", "triceps"]},
-            {"name": "Pull A", "muscle_groups": ["back", "biceps"]},
-            {"name": "Legs A", "muscle_groups": ["legs", "core"]},
-            {"name": "Push B", "muscle_groups": ["chest", "shoulders", "triceps"]},
-            {"name": "Pull B", "muscle_groups": ["back", "biceps"]},
-            {"name": "Legs B", "muscle_groups": ["legs", "core"]},
+            {
+                "name": "Push A",
+                "split_type": "push",
+                "muscle_groups": ["chest", "shoulders", "arms"],
+            },
+            {
+                "name": "Pull A",
+                "split_type": "pull",
+                "muscle_groups": ["back", "arms"],
+            },
+            {
+                "name": "Legs A",
+                "split_type": "legs",
+                "muscle_groups": ["legs"],
+            },
+            {
+                "name": "Push B",
+                "split_type": "push",
+                "muscle_groups": ["chest", "shoulders", "arms"],
+            },
+            {
+                "name": "Pull B",
+                "split_type": "pull",
+                "muscle_groups": ["back", "arms"],
+            },
+            {
+                "name": "Legs B",
+                "split_type": "legs",
+                "muscle_groups": ["legs"],
+            },
         ],
+    },
+}
+
+# Sub-region targeting based on split type
+SPLIT_SUBREGIONS = {
+    "push": {
+        "chest": ["upper_chest", "mid_chest", "lower_chest"],
+        "shoulders": ["front_delt", "side_delt"],
+        "arms": ["triceps_lateral_medial", "triceps_long_head"],
+    },
+    "pull": {
+        "back": ["upper_back", "lats"],
+        "shoulders": ["rear_delt"],
+        "arms": ["biceps_short_head", "biceps_long_head"],
+    },
+    "legs": {
+        "legs": ["quadriceps", "hamstrings", "glutes"],
+        "back": ["lower_back"],
+    },
+    "upper": {
+        "chest": ["upper_chest", "mid_chest"],
+        "back": ["upper_back", "lats"],
+        "shoulders": ["front_delt", "side_delt", "rear_delt"],
+        "arms": ["biceps_long_head", "triceps_long_head"],
+    },
+    "full_body": {
+        "chest": ["mid_chest", "upper_chest"],
+        "back": ["lats", "upper_back"],
+        "shoulders": ["side_delt"],
+        "arms": ["biceps_long_head", "triceps_long_head"],
+        "legs": ["quadriceps", "glutes"],
     },
 }
 
@@ -118,7 +258,10 @@ def validate_input(data):
 
     invalid_equipment = set(data["equipment"]) - VALID_EQUIPMENT
     if invalid_equipment:
-        raise ValidationError(f"Invalid equipment: {', '.join(invalid_equipment)}. Valid options: {', '.join(VALID_EQUIPMENT)}")
+        raise ValidationError(
+            f"Invalid equipment: {', '.join(invalid_equipment)}. "
+            f"Valid options: {', '.join(VALID_EQUIPMENT)}"
+        )
 
     days = data["days_per_week"]
     if not isinstance(days, int) or days < 3 or days > 6:
@@ -129,127 +272,239 @@ def validate_input(data):
         raise ValidationError("session_duration must be an integer between 30 and 120")
 
 
-def select_exercises_for_muscle_group(muscle_group, available_exercises, count):
-    """Select exercises for a muscle group from available exercises."""
-    muscle_exercises = [e for e in available_exercises if e["muscle_group"] == muscle_group]
-
-    if not muscle_exercises:
-        bodyweight = [e for e in EXERCISES if e["muscle_group"] == muscle_group and "bodyweight" in e["equipment"]]
-        muscle_exercises = bodyweight[:count] if bodyweight else []
-
-    compounds = [e for e in muscle_exercises if e["type"] == "compound"]
-    isolations = [e for e in muscle_exercises if e["type"] == "isolation"]
-
-    selected = []
-
-    # Prioritize compounds first
-    for ex in compounds:
-        if len(selected) >= count:
-            break
-        if ex not in selected:
-            selected.append(ex)
-
-    # Fill with isolations
-    for ex in isolations:
-        if len(selected) >= count:
-            break
-        if ex not in selected:
-            selected.append(ex)
-
-    # If still need more, add any remaining
-    for ex in muscle_exercises:
-        if len(selected) >= count:
-            break
-        if ex not in selected:
-            selected.append(ex)
-
-    return selected[:count]
-
-
-def get_muscle_groups_for_day(day_info, gender):
-    """Get muscle groups for a workout day, adjusted for gender."""
+def get_muscle_groups_for_day(day_info, gender, split_type):
+    """Get muscle groups and sub-regions for a workout day, adjusted for gender."""
     groups = day_info["muscle_groups"].copy()
 
-    # Female: add glutes on leg/lower days
+    # Get base sub-regions for this split
+    target_subregions = {}
+    base_subregions = SPLIT_SUBREGIONS.get(split_type, {})
+    excluded = set(GENDER_EXCLUDED_SUBREGIONS.get(gender, []))
+
+    for muscle_group, subregions in base_subregions.items():
+        # Filter out excluded sub-regions for this gender
+        filtered = [sr for sr in subregions if sr not in excluded]
+        if filtered:
+            target_subregions[muscle_group] = filtered.copy()
+
+    # Female: prioritize glutes on leg days
     if gender == "female" and "legs" in groups:
-        if "glutes" not in groups:
-            groups.append("glutes")
+        if "legs" in target_subregions:
+            leg_subs = target_subregions["legs"]
+            if "glutes" in leg_subs:
+                leg_subs.remove("glutes")
+                leg_subs.insert(0, "glutes")
 
-    return groups
+    return groups, target_subregions
 
 
-def build_workout_day(day_info, available_exercises, goal_params, experience, gender):
-    """Build a single workout day with proper volume per muscle group."""
+def build_workout_day(day_info, selector, goal_params, experience, gender):
+    """Build a single workout day with intelligent exercise selection.
+
+    Uses the new ExerciseSelector for:
+    - Sub-region coverage
+    - Tier-based prioritization
+    - Movement pattern redundancy prevention
+    - Gender-specific volume (females: more legs/glutes)
+    - Enforces min 4 and max 9 exercises per workout
+    """
     exercises = []
+    all_warnings = []
     volume_mult = EXPERIENCE_MULTIPLIERS[experience]
+    gender_adjustments = GENDER_VOLUME_ADJUSTMENTS[gender]
 
-    # Get muscle groups adjusted for gender
-    muscle_groups = get_muscle_groups_for_day(day_info, gender)
+    split_type = day_info.get("split_type", "full_body")
+    muscle_groups, target_subregions = get_muscle_groups_for_day(
+        day_info, gender, split_type
+    )
 
-    # Determine exercises per muscle based on experience
-    base_count = VOLUME_PER_MUSCLE[experience]
+    # Track used patterns across the entire workout day
+    used_patterns = set()
 
-    # For full body days (many muscles), reduce count to avoid excessive volume
-    is_full_body = len(muscle_groups) >= 6
-    if is_full_body:
-        count_per_muscle = 1 if experience == "beginner" else 2
-    else:
-        count_per_muscle = base_count
+    # For full body, reduce volume per muscle to avoid excessive session length
+    is_full_body = len(muscle_groups) >= 4
+
+    # Calculate exercises needed per muscle group considering gender adjustments
+    exercises_by_muscle = {}
 
     for muscle_group in muscle_groups:
-        selected = select_exercises_for_muscle_group(
-            muscle_group, available_exercises, count_per_muscle
+        # Get target sub-regions for this muscle in this split
+        sub_targets = target_subregions.get(muscle_group)
+
+        # Apply gender-specific volume adjustment
+        gender_mult = gender_adjustments.get(muscle_group, 1.0)
+
+        # Temporarily adjust selector config for this muscle group
+        original_exercises_per_muscle = selector.config["exercises_per_muscle"]
+        adjusted_count = max(1, round(original_exercises_per_muscle * gender_mult))
+        selector.config["exercises_per_muscle"] = adjusted_count
+
+        # Select exercises with intelligent algorithm
+        selected, used_patterns, warnings = selector.select_for_muscle_group(
+            muscle_group,
+            used_patterns=used_patterns,
+            target_subregions=sub_targets,
         )
 
-        for exercise in selected:
-            sets = max(2, round(goal_params["sets"] * volume_mult))
-            rest = exercise.get("rest", goal_params["rest"])
+        # Restore original config
+        selector.config["exercises_per_muscle"] = original_exercises_per_muscle
 
-            if exercise["type"] == "isolation":
-                rest = min(rest, 90)
+        all_warnings.extend(warnings)
 
-            exercises.append({
-                "name": exercise["name"],
-                "muscle_group": exercise["muscle_group"],
-                "sets": sets,
-                "reps": goal_params["reps"],
-                "rest_seconds": rest,
-                "type": exercise["type"],
-            })
+        # For full body, limit exercises per muscle
+        if is_full_body and len(selected) > 2:
+            selected = selected[:2]
+
+        exercises_by_muscle[muscle_group] = selected
+
+    # Flatten and apply constraints
+    all_selected = []
+    for muscle_group in muscle_groups:
+        all_selected.extend(exercises_by_muscle[muscle_group])
+
+    # Sort: compounds first, then isolations (preserving tier order within each group)
+    compounds = [e for e in all_selected if e.get("type") == "compound"]
+    isolations = [e for e in all_selected if e.get("type") == "isolation"]
+    all_selected = compounds + isolations
+
+    # Enforce gender-specific maximum exercises
+    gender_max = GENDER_MAX_EXERCISES[gender].get(split_type, WORKOUT_CONSTRAINTS["max_exercises"])
+    max_exercises = min(gender_max, WORKOUT_CONSTRAINTS["max_exercises"])
+    if len(all_selected) > max_exercises:
+        # Keep compounds, trim isolations first
+        compounds = [e for e in all_selected if e.get("type") == "compound"]
+        isolations = [e for e in all_selected if e.get("type") == "isolation"]
+        remaining_slots = max_exercises - len(compounds)
+        if remaining_slots > 0:
+            all_selected = compounds + isolations[:remaining_slots]
+        else:
+            all_selected = compounds[:max_exercises]
+
+    # Enforce minimum 4 exercises - fill with more from the same split's sub-regions
+    min_exercises = WORKOUT_CONSTRAINTS["min_exercises"]
+    if len(all_selected) < min_exercises:
+        selected_ids = {e["id"] for e in all_selected}
+        needed = min_exercises - len(all_selected)
+
+        # Get sub-regions for the current split type
+        split_subregions = target_subregions if target_subregions else {}
+        fill_subregions = []
+        for mg in muscle_groups:
+            if mg in split_subregions:
+                fill_subregions.extend(split_subregions[mg])
+
+        # If legs split, prioritize glutes
+        if split_type == "legs":
+            if "glutes" in fill_subregions:
+                fill_subregions.remove("glutes")
+                fill_subregions.insert(0, "glutes")
+
+        for subregion in fill_subregions:
+            if needed <= 0:
+                break
+            candidates = selector._get_exercises_for_subregion(subregion)
+            for exercise in candidates:
+                if exercise["id"] in selected_ids:
+                    continue
+                ex_pattern = get_movement_pattern(exercise["id"])
+                if ex_pattern and ex_pattern in used_patterns:
+                    continue
+                all_selected.append(exercise)
+                selected_ids.add(exercise["id"])
+                if ex_pattern:
+                    used_patterns.add(ex_pattern)
+                needed -= 1
+                if needed <= 0:
+                    break
+
+    # Re-sort after adding minimum exercises: compounds first
+    compounds = [e for e in all_selected if e.get("type") == "compound"]
+    isolations = [e for e in all_selected if e.get("type") == "isolation"]
+    all_selected = compounds + isolations
+
+    # Build final exercise list with parameters
+    for exercise in all_selected:
+        sets = max(2, round(goal_params["sets"] * volume_mult))
+        rest = exercise.get("rest", goal_params["rest"])
+
+        if exercise["type"] == "isolation":
+            rest = min(rest, 90)
+
+        # Get tier for display
+        tier = exercise.get("nippard_tier", "-")
+
+        exercises.append({
+            "id": exercise["id"],
+            "name": exercise["name"],
+            "muscle_group": exercise["muscle_group"],
+            "sub_region": exercise["sub_region"],
+            "sets": sets,
+            "reps": goal_params["reps"],
+            "rest_seconds": rest,
+            "type": exercise["type"],
+            "tier": tier,
+            "targets": exercise.get("targets", []),
+        })
 
     return {
         "day": day_info["name"],
+        "split_type": split_type,
         "muscle_groups": muscle_groups,
         "exercises": exercises,
+        "warnings": all_warnings,
     }
 
 
 def suggest(data):
-    """Generate a workout plan based on user parameters."""
+    """Generate a workout plan based on user parameters.
+
+    Returns a complete workout plan with:
+    - Exercises selected for proper muscle head coverage
+    - No redundant movement patterns
+    - Higher-tier exercises prioritized
+    - Difficulty appropriate for experience level
+    """
     validate_input(data)
 
     equipment = data["equipment"]
     if "bodyweight" not in equipment:
         equipment = equipment + ["bodyweight"]
 
-    available_exercises = get_exercises_by_equipment(equipment)
+    # Create the intelligent exercise selector
+    selector = ExerciseSelector(equipment, data["experience"])
 
     split = SPLITS[data["days_per_week"]]
     goal_params = GOAL_PARAMS[data["goal"]]
     progression = PROGRESSIONS[data["goal"]]
 
     workouts = []
+    all_plan_warnings = []
+
     for day_info in split["days"]:
         workout = build_workout_day(
-            day_info, available_exercises, goal_params,
+            day_info, selector, goal_params,
             data["experience"], data["gender"]
         )
+
+        # Validate the workout against targeted sub-regions (split-aware)
+        target_subs = SPLIT_SUBREGIONS.get(workout["split_type"], {})
+        validation_warnings = validate_workout(
+            workout["exercises"],
+            workout["muscle_groups"],
+            target_subregions=target_subs if target_subs else None
+        )
+        workout["validation_warnings"] = validation_warnings
+        all_plan_warnings.extend(validation_warnings)
+
         workouts.append(workout)
 
     return {
         "split": {
             "name": split["name"],
-            "days": split["days"],
+            "days": [
+                {"name": d["name"], "muscle_groups": d["muscle_groups"]}
+                for d in split["days"]
+            ],
         },
         "workouts": workouts,
         "progression": progression,
@@ -259,4 +514,5 @@ def suggest(data):
             "days_per_week": data["days_per_week"],
             "session_duration": data.get("session_duration", 60),
         },
+        "warnings": all_plan_warnings,
     }

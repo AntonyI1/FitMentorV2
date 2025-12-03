@@ -1,97 +1,196 @@
-"""Exercise database with 65 exercises across 8 muscle groups."""
+"""Exercise database - backward compatible wrapper around evidence-based database.
 
-EXERCISES = [
-    # Chest (11 exercises)
-    {"id": 1, "name": "Barbell Bench Press", "muscle_group": "chest", "subcategory": "mid_chest", "equipment": ["barbell", "bench", "rack"], "difficulty": "intermediate", "type": "compound", "category": "flat_press", "rest": 120},
-    {"id": 2, "name": "Dumbbell Bench Press", "muscle_group": "chest", "subcategory": "mid_chest", "equipment": ["dumbbell", "bench"], "difficulty": "beginner", "type": "compound", "category": "flat_press", "rest": 120},
-    {"id": 3, "name": "Incline Barbell Press", "muscle_group": "chest", "subcategory": "upper_chest", "equipment": ["barbell", "bench", "rack"], "difficulty": "intermediate", "type": "compound", "category": "incline_press", "rest": 120},
-    {"id": 4, "name": "Incline Dumbbell Press", "muscle_group": "chest", "subcategory": "upper_chest", "equipment": ["dumbbell", "bench"], "difficulty": "beginner", "type": "compound", "category": "incline_press", "rest": 120},
-    {"id": 5, "name": "Cable Fly", "muscle_group": "chest", "subcategory": "mid_chest", "equipment": ["cable"], "difficulty": "beginner", "type": "isolation", "category": "chest_fly", "rest": 90},
-    {"id": 6, "name": "Dumbbell Fly", "muscle_group": "chest", "subcategory": "mid_chest", "equipment": ["dumbbell", "bench"], "difficulty": "beginner", "type": "isolation", "category": "chest_fly", "rest": 90},
-    {"id": 7, "name": "Chest Dip", "muscle_group": "chest", "subcategory": "lower_chest", "equipment": ["bodyweight"], "difficulty": "intermediate", "type": "compound", "category": "dip", "rest": 120},
-    {"id": 8, "name": "Push-Up", "muscle_group": "chest", "subcategory": "mid_chest", "equipment": ["bodyweight"], "difficulty": "beginner", "type": "compound", "category": "flat_press", "rest": 90},
-    {"id": 39, "name": "Machine Chest Press", "muscle_group": "chest", "subcategory": "mid_chest", "equipment": ["machine"], "difficulty": "beginner", "type": "compound", "category": "flat_press", "rest": 90},
-    {"id": 40, "name": "Decline Dumbbell Press", "muscle_group": "chest", "subcategory": "lower_chest", "equipment": ["dumbbell", "bench"], "difficulty": "intermediate", "type": "compound", "category": "decline_press", "rest": 120},
-    {"id": 41, "name": "Pec Deck", "muscle_group": "chest", "subcategory": "mid_chest", "equipment": ["machine"], "difficulty": "beginner", "type": "isolation", "category": "chest_fly", "rest": 60},
+This module provides backward compatibility with the old exercise database
+while using the new evidence-based exercise data internally.
 
-    # Back (10 exercises)
-    {"id": 9, "name": "Pull-Up", "muscle_group": "back", "subcategory": "lats", "equipment": ["pullup_bar"], "difficulty": "intermediate", "type": "compound", "category": "vertical_pull", "rest": 120},
-    {"id": 10, "name": "Lat Pulldown", "muscle_group": "back", "subcategory": "lats", "equipment": ["cable"], "difficulty": "beginner", "type": "compound", "category": "vertical_pull", "rest": 90},
-    {"id": 11, "name": "Barbell Row", "muscle_group": "back", "subcategory": "mid_back", "equipment": ["barbell"], "difficulty": "intermediate", "type": "compound", "category": "horizontal_pull", "rest": 120},
-    {"id": 12, "name": "Dumbbell Row", "muscle_group": "back", "subcategory": "mid_back", "equipment": ["dumbbell", "bench"], "difficulty": "beginner", "type": "compound", "category": "horizontal_pull", "rest": 90},
-    {"id": 13, "name": "Seated Cable Row", "muscle_group": "back", "subcategory": "mid_back", "equipment": ["cable"], "difficulty": "beginner", "type": "compound", "category": "horizontal_pull", "rest": 90},
-    {"id": 14, "name": "Face Pull", "muscle_group": "back", "subcategory": "rear_delt", "equipment": ["cable"], "difficulty": "beginner", "type": "isolation", "category": "isolation", "rest": 60},
-    {"id": 42, "name": "T-Bar Row", "muscle_group": "back", "subcategory": "mid_back", "equipment": ["barbell"], "difficulty": "intermediate", "type": "compound", "category": "horizontal_pull", "rest": 120},
-    {"id": 43, "name": "Chest Supported Row", "muscle_group": "back", "subcategory": "mid_back", "equipment": ["dumbbell", "bench"], "difficulty": "beginner", "type": "compound", "category": "horizontal_pull", "rest": 90},
-    {"id": 44, "name": "Straight Arm Pulldown", "muscle_group": "back", "subcategory": "lats", "equipment": ["cable"], "difficulty": "beginner", "type": "isolation", "category": "isolation", "rest": 60},
-    {"id": 45, "name": "Inverted Row", "muscle_group": "back", "subcategory": "mid_back", "equipment": ["bodyweight"], "difficulty": "beginner", "type": "compound", "category": "horizontal_pull", "rest": 90},
+The new database (exercise_data/) contains 120+ exercises with:
+- Nippard tier rankings (S+ through D)
+- Research citations and EMG data
+- Detailed muscle head targeting
+- Evidence-based programming notes
 
-    # Legs (15 exercises)
-    {"id": 15, "name": "Barbell Back Squat", "muscle_group": "legs", "subcategory": "quads", "equipment": ["barbell", "rack"], "difficulty": "intermediate", "type": "compound", "category": "squat", "rest": 180},
-    {"id": 16, "name": "Goblet Squat", "muscle_group": "legs", "subcategory": "quads", "equipment": ["dumbbell"], "difficulty": "beginner", "type": "compound", "category": "squat", "rest": 120},
-    {"id": 17, "name": "Leg Press", "muscle_group": "legs", "subcategory": "quads", "equipment": ["machine"], "difficulty": "beginner", "type": "compound", "category": "squat", "rest": 120},
-    {"id": 18, "name": "Romanian Deadlift", "muscle_group": "legs", "subcategory": "hamstrings", "equipment": ["barbell"], "difficulty": "intermediate", "type": "compound", "category": "hip_hinge", "rest": 120},
-    {"id": 19, "name": "Dumbbell Romanian Deadlift", "muscle_group": "legs", "subcategory": "hamstrings", "equipment": ["dumbbell"], "difficulty": "beginner", "type": "compound", "category": "hip_hinge", "rest": 120},
-    {"id": 20, "name": "Leg Curl", "muscle_group": "legs", "subcategory": "hamstrings", "equipment": ["machine"], "difficulty": "beginner", "type": "isolation", "category": "hamstring_iso", "rest": 90},
-    {"id": 21, "name": "Leg Extension", "muscle_group": "legs", "subcategory": "quads", "equipment": ["machine"], "difficulty": "beginner", "type": "isolation", "category": "quad_iso", "rest": 90},
-    {"id": 22, "name": "Walking Lunge", "muscle_group": "legs", "subcategory": "quads", "equipment": ["dumbbell"], "difficulty": "beginner", "type": "compound", "category": "unilateral", "rest": 90},
-    {"id": 23, "name": "Bulgarian Split Squat", "muscle_group": "legs", "subcategory": "quads", "equipment": ["dumbbell", "bench"], "difficulty": "intermediate", "type": "compound", "category": "unilateral", "rest": 90},
-    {"id": 24, "name": "Calf Raise", "muscle_group": "legs", "subcategory": "calves", "equipment": ["machine"], "difficulty": "beginner", "type": "isolation", "category": "calf", "rest": 60},
-    {"id": 25, "name": "Bodyweight Squat", "muscle_group": "legs", "subcategory": "quads", "equipment": ["bodyweight"], "difficulty": "beginner", "type": "compound", "category": "squat", "rest": 60},
-    {"id": 46, "name": "Hack Squat", "muscle_group": "legs", "subcategory": "quads", "equipment": ["machine"], "difficulty": "beginner", "type": "compound", "category": "squat", "rest": 120},
-    {"id": 47, "name": "Good Morning", "muscle_group": "legs", "subcategory": "hamstrings", "equipment": ["barbell", "rack"], "difficulty": "intermediate", "type": "compound", "category": "hip_hinge", "rest": 120},
-    {"id": 48, "name": "Sissy Squat", "muscle_group": "legs", "subcategory": "quads", "equipment": ["bodyweight"], "difficulty": "intermediate", "type": "isolation", "category": "quad_iso", "rest": 90},
-    {"id": 49, "name": "Nordic Curl", "muscle_group": "legs", "subcategory": "hamstrings", "equipment": ["bodyweight"], "difficulty": "advanced", "type": "isolation", "category": "hamstring_iso", "rest": 120},
+For new code, use exercise_query.py directly for full functionality.
+"""
 
-    # Glutes (5 exercises) - female focus
-    {"id": 50, "name": "Barbell Hip Thrust", "muscle_group": "glutes", "subcategory": "glutes", "equipment": ["barbell", "bench"], "difficulty": "intermediate", "type": "compound", "category": "hip_thrust", "rest": 120},
-    {"id": 51, "name": "Glute Bridge", "muscle_group": "glutes", "subcategory": "glutes", "equipment": ["bodyweight"], "difficulty": "beginner", "type": "compound", "category": "hip_thrust", "rest": 60},
-    {"id": 52, "name": "Cable Kickback", "muscle_group": "glutes", "subcategory": "glutes", "equipment": ["cable"], "difficulty": "beginner", "type": "isolation", "category": "glute_iso", "rest": 60},
-    {"id": 53, "name": "Sumo Deadlift", "muscle_group": "glutes", "subcategory": "glutes", "equipment": ["barbell"], "difficulty": "intermediate", "type": "compound", "category": "hip_hinge", "rest": 150},
-    {"id": 54, "name": "Dumbbell Hip Thrust", "muscle_group": "glutes", "subcategory": "glutes", "equipment": ["dumbbell", "bench"], "difficulty": "beginner", "type": "compound", "category": "hip_thrust", "rest": 90},
+from .exercise_data import (
+    ALL_EXERCISES as NEW_EXERCISES,
+    get_all_exercises as _new_get_all,
+    get_exercise_by_id as _new_get_by_id,
+    get_exercises_by_muscle_group as _new_get_by_muscle,
+    get_exercises_by_equipment as _new_get_by_equipment,
+)
 
-    # Shoulders (8 exercises)
-    {"id": 26, "name": "Overhead Press", "muscle_group": "shoulders", "subcategory": "front_delt", "equipment": ["barbell", "rack"], "difficulty": "intermediate", "type": "compound", "category": "overhead_press", "rest": 120},
-    {"id": 27, "name": "Dumbbell Shoulder Press", "muscle_group": "shoulders", "subcategory": "front_delt", "equipment": ["dumbbell", "bench"], "difficulty": "beginner", "type": "compound", "category": "overhead_press", "rest": 120},
-    {"id": 28, "name": "Lateral Raise", "muscle_group": "shoulders", "subcategory": "side_delt", "equipment": ["dumbbell"], "difficulty": "beginner", "type": "isolation", "category": "lateral_delt", "rest": 60},
-    {"id": 29, "name": "Rear Delt Fly", "muscle_group": "shoulders", "subcategory": "rear_delt", "equipment": ["dumbbell"], "difficulty": "beginner", "type": "isolation", "category": "rear_delt", "rest": 60},
-    {"id": 30, "name": "Cable Lateral Raise", "muscle_group": "shoulders", "subcategory": "side_delt", "equipment": ["cable"], "difficulty": "beginner", "type": "isolation", "category": "lateral_delt", "rest": 60},
-    {"id": 55, "name": "Arnold Press", "muscle_group": "shoulders", "subcategory": "front_delt", "equipment": ["dumbbell", "bench"], "difficulty": "intermediate", "type": "compound", "category": "overhead_press", "rest": 120},
-    {"id": 56, "name": "Machine Shoulder Press", "muscle_group": "shoulders", "subcategory": "front_delt", "equipment": ["machine"], "difficulty": "beginner", "type": "compound", "category": "overhead_press", "rest": 90},
-    {"id": 57, "name": "Upright Row", "muscle_group": "shoulders", "subcategory": "side_delt", "equipment": ["barbell"], "difficulty": "intermediate", "type": "compound", "category": "upright_row", "rest": 90},
+# Legacy exercise data - kept for backward compatibility with old integer IDs
+# Maps old integer ID -> new string ID for lookup
+LEGACY_ID_MAP = {
+    1: "flat-barbell-bench-press",
+    2: "flat-dumbbell-press",
+    3: "incline-barbell-bench-press",
+    4: "incline-dumbbell-press",
+    5: "cable-crossover-mid",
+    6: "flat-dumbbell-fly",
+    7: "chest-dips",
+    8: "push-ups-standard",
+    9: "pull-ups",
+    10: "lat-pulldown",
+    11: "bent-over-row-wide",
+    12: "single-arm-dumbbell-row",
+    13: "seated-cable-row-close",
+    14: "face-pulls-omni",
+    15: "barbell-back-squat",
+    16: "goblet-squat",
+    17: "45-degree-leg-press",
+    18: "romanian-deadlift",
+    19: "romanian-deadlift",  # Dumbbell RDL maps to same
+    20: "lying-leg-curl",
+    21: "leg-extension",
+    22: "walking-lunges-short",
+    23: "bulgarian-split-squat",
+    24: None,  # Calf raise not in new DB
+    25: None,  # Bodyweight squat - use goblet squat
+    26: "standing-barbell-overhead-press",
+    27: "seated-dumbbell-overhead-press",
+    28: "standing-dumbbell-lateral-raise",
+    29: "bent-over-reverse-dumbbell-fly",
+    30: "single-arm-cable-lateral-raise",
+    31: "wide-grip-barbell-curl",
+    32: "hammer-curl",
+    33: "hammer-curl",
+    34: "cable-pushdown-rope",
+    35: "dumbbell-overhead-extension",
+    36: "close-grip-bench-press",
+    37: None,  # Plank - core not in new DB
+    38: None,  # Cable crunch - core not in new DB
+    39: "machine-chest-press",
+    40: "decline-dumbbell-press",
+    41: "pec-deck-machine",
+    42: None,  # T-bar row maps to bent-over row
+    43: "chest-supported-row-neutral",
+    44: "straight-arm-pulldown",
+    45: "inverted-row",
+    46: "hack-squat",
+    47: "good-mornings",
+    48: "sissy-squat",
+    49: "nordic-hamstring-curl",
+    50: "barbell-hip-thrust",
+    51: "glute-bridge",
+    52: "cable-kickback",
+    53: None,  # Sumo deadlift - use conventional
+    54: None,  # DB hip thrust - use barbell
+    55: "arnold-press",
+    56: "machine-shoulder-press",
+    57: "upright-row",
+    58: "preacher-curl",
+    59: "incline-dumbbell-curl",
+    60: "wide-grip-cable-curl",
+    61: "skull-crushers",
+    62: "weighted-dips-upright",
+    63: "cable-overhead-extension-rope",
+    64: None,  # Hanging leg raise - core
+    65: None,  # Ab wheel - core
+    66: None,  # Decline sit-up - core
+}
 
-    # Biceps (6 exercises)
-    {"id": 31, "name": "Barbell Curl", "muscle_group": "biceps", "subcategory": "biceps", "equipment": ["barbell"], "difficulty": "beginner", "type": "isolation", "category": "bicep_curl", "rest": 90},
-    {"id": 32, "name": "Dumbbell Curl", "muscle_group": "biceps", "subcategory": "biceps", "equipment": ["dumbbell"], "difficulty": "beginner", "type": "isolation", "category": "bicep_curl", "rest": 60},
-    {"id": 33, "name": "Hammer Curl", "muscle_group": "biceps", "subcategory": "biceps", "equipment": ["dumbbell"], "difficulty": "beginner", "type": "isolation", "category": "bicep_curl", "rest": 60},
-    {"id": 58, "name": "Preacher Curl", "muscle_group": "biceps", "subcategory": "biceps", "equipment": ["barbell", "bench"], "difficulty": "beginner", "type": "isolation", "category": "bicep_curl", "rest": 60},
-    {"id": 59, "name": "Incline Dumbbell Curl", "muscle_group": "biceps", "subcategory": "biceps", "equipment": ["dumbbell", "bench"], "difficulty": "beginner", "type": "isolation", "category": "bicep_curl", "rest": 60},
-    {"id": 60, "name": "Cable Curl", "muscle_group": "biceps", "subcategory": "biceps", "equipment": ["cable"], "difficulty": "beginner", "type": "isolation", "category": "bicep_curl", "rest": 60},
+# Muscle group mapping: old names -> new names
+MUSCLE_GROUP_MAP = {
+    "chest": "chest",
+    "back": "back",
+    "legs": "legs",
+    "glutes": "legs",  # Glutes are now under legs sub-region
+    "shoulders": "shoulders",
+    "biceps": "arms",
+    "triceps": "arms",
+    "core": None,  # Core not in new database
+}
 
-    # Triceps (6 exercises)
-    {"id": 34, "name": "Tricep Pushdown", "muscle_group": "triceps", "subcategory": "triceps", "equipment": ["cable"], "difficulty": "beginner", "type": "isolation", "category": "tricep_extension", "rest": 60},
-    {"id": 35, "name": "Overhead Tricep Extension", "muscle_group": "triceps", "subcategory": "triceps", "equipment": ["dumbbell"], "difficulty": "beginner", "type": "isolation", "category": "tricep_extension", "rest": 60},
-    {"id": 36, "name": "Close Grip Bench Press", "muscle_group": "triceps", "subcategory": "triceps", "equipment": ["barbell", "bench", "rack"], "difficulty": "intermediate", "type": "compound", "category": "tricep_press", "rest": 120},
-    {"id": 61, "name": "Skull Crusher", "muscle_group": "triceps", "subcategory": "triceps", "equipment": ["barbell", "bench"], "difficulty": "intermediate", "type": "isolation", "category": "tricep_extension", "rest": 90},
-    {"id": 62, "name": "Tricep Dip", "muscle_group": "triceps", "subcategory": "triceps", "equipment": ["bodyweight"], "difficulty": "intermediate", "type": "compound", "category": "tricep_press", "rest": 90},
-    {"id": 63, "name": "Cable Overhead Extension", "muscle_group": "triceps", "subcategory": "triceps", "equipment": ["cable"], "difficulty": "beginner", "type": "isolation", "category": "tricep_extension", "rest": 60},
+# Subcategory mapping: old names -> new sub_region names
+SUBCATEGORY_MAP = {
+    "mid_chest": "mid_chest",
+    "upper_chest": "upper_chest",
+    "lower_chest": "lower_chest",
+    "lats": "lats",
+    "mid_back": "upper_back",
+    "rear_delt": "rear_delt",
+    "quads": "quadriceps",
+    "hamstrings": "hamstrings",
+    "calves": None,  # No calves in new DB
+    "glutes": "glutes",
+    "front_delt": "front_delt",
+    "side_delt": "side_delt",
+    "biceps": "biceps_short_head",  # Default to short head
+    "triceps": "triceps_lateral_medial",  # Default to lateral/medial
+    "core": None,
+}
 
-    # Core (5 exercises)
-    {"id": 37, "name": "Plank", "muscle_group": "core", "subcategory": "core", "equipment": ["bodyweight"], "difficulty": "beginner", "type": "isolation", "category": "core", "rest": 60},
-    {"id": 38, "name": "Cable Crunch", "muscle_group": "core", "subcategory": "core", "equipment": ["cable"], "difficulty": "beginner", "type": "isolation", "category": "core", "rest": 60},
-    {"id": 64, "name": "Hanging Leg Raise", "muscle_group": "core", "subcategory": "core", "equipment": ["pullup_bar"], "difficulty": "intermediate", "type": "isolation", "category": "core", "rest": 60},
-    {"id": 65, "name": "Ab Wheel Rollout", "muscle_group": "core", "subcategory": "core", "equipment": ["bodyweight"], "difficulty": "intermediate", "type": "isolation", "category": "core", "rest": 90},
-    {"id": 66, "name": "Decline Sit-up", "muscle_group": "core", "subcategory": "core", "equipment": ["bench"], "difficulty": "beginner", "type": "isolation", "category": "core", "rest": 60},
-]
+# Difficulty mapping
+DIFFICULTY_MAP = {
+    "beginner": "easy",
+    "intermediate": "medium",
+    "advanced": "hard",
+}
+
+
+def _adapt_exercise(new_exercise):
+    """Convert new exercise format to old format for backward compatibility."""
+    # Reverse map sub_region to old subcategory
+    subcategory = new_exercise["sub_region"]
+    for old, new in SUBCATEGORY_MAP.items():
+        if new == subcategory:
+            subcategory = old
+            break
+
+    # Reverse map difficulty
+    difficulty = new_exercise["difficulty"]
+    for old, new in DIFFICULTY_MAP.items():
+        if new == difficulty:
+            difficulty = old
+            break
+
+    return {
+        "id": new_exercise["id"],
+        "name": new_exercise["name"],
+        "muscle_group": new_exercise["muscle_group"],
+        "subcategory": subcategory,
+        "equipment": new_exercise["equipment"],
+        "difficulty": difficulty,
+        "type": new_exercise["type"],
+        "category": new_exercise["type"],  # Use type as category
+        "rest": new_exercise["rest"],
+        # New fields available
+        "nippard_tier": new_exercise.get("nippard_tier"),
+        "research_notes": new_exercise.get("research_notes"),
+        "targets": new_exercise.get("targets", []),
+    }
+
+
+# Build the EXERCISES list from new database for backward compatibility
+EXERCISES = [_adapt_exercise(e) for e in NEW_EXERCISES]
 
 
 def get_all_exercises():
-    """Return all exercises."""
+    """Return all exercises in backward-compatible format."""
     return EXERCISES
 
 
 def get_exercises_by_muscle_group(muscle_group):
-    """Return exercises for a specific muscle group."""
+    """Return exercises for a specific muscle group.
+
+    Handles legacy muscle group names (biceps, triceps, glutes).
+    """
+    # Handle legacy muscle groups
+    if muscle_group == "biceps":
+        return [e for e in EXERCISES if e["muscle_group"] == "arms"
+                and "biceps" in e.get("subcategory", "")]
+    elif muscle_group == "triceps":
+        return [e for e in EXERCISES if e["muscle_group"] == "arms"
+                and "triceps" in e.get("subcategory", "")]
+    elif muscle_group == "glutes":
+        return [e for e in EXERCISES if e["muscle_group"] == "legs"
+                and e.get("subcategory") == "glutes"]
+    elif muscle_group == "core":
+        # Core exercises not in new database
+        return []
+
     return [e for e in EXERCISES if e["muscle_group"] == muscle_group]
 
 
@@ -105,8 +204,42 @@ def get_exercises_by_equipment(equipment_list):
 
 
 def get_exercise_by_id(exercise_id):
-    """Return a specific exercise by ID."""
-    for e in EXERCISES:
-        if e["id"] == exercise_id:
-            return e
+    """Return a specific exercise by ID.
+
+    Supports both:
+    - Legacy integer IDs (1-66)
+    - New string IDs ("incline-barbell-bench-press")
+    """
+    # Try new string ID first
+    if isinstance(exercise_id, str):
+        new_exercise = _new_get_by_id(exercise_id)
+        if new_exercise:
+            return _adapt_exercise(new_exercise)
+        return None
+
+    # Try legacy integer ID
+    if isinstance(exercise_id, int):
+        new_id = LEGACY_ID_MAP.get(exercise_id)
+        if new_id:
+            new_exercise = _new_get_by_id(new_id)
+            if new_exercise:
+                return _adapt_exercise(new_exercise)
+        return None
+
     return None
+
+
+# Export new database functions for direct access
+def get_evidence_based_exercises():
+    """Return all exercises from the new evidence-based database."""
+    return NEW_EXERCISES
+
+
+def get_exercises_with_tier(min_tier="A"):
+    """Return exercises with at least the specified Nippard tier."""
+    from .exercise_data import TIER_RANK
+    min_rank = TIER_RANK.get(min_tier, 0)
+    return [
+        e for e in NEW_EXERCISES
+        if TIER_RANK.get(e.get("nippard_tier"), 0) >= min_rank
+    ]

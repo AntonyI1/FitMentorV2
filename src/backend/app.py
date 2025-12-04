@@ -2,7 +2,9 @@
 
 from flask import Flask, request, jsonify
 
-from models import calorie_calculator, workout_suggester, data_collector
+from urllib.parse import unquote
+
+from models import calorie_calculator, workout_suggester, data_collector, workout_storage
 from models.exercises import get_all_exercises
 
 app = Flask(__name__)
@@ -31,6 +33,9 @@ def index():
             {"method": "POST", "path": "/api/suggest-workout", "description": "Generate workout plan"},
             {"method": "GET", "path": "/api/exercises", "description": "Get exercise database"},
             {"method": "GET", "path": "/api/stats", "description": "Get data collection stats"},
+            {"method": "POST", "path": "/api/workouts/save", "description": "Save a workout"},
+            {"method": "GET", "path": "/api/workouts/load/<name>", "description": "Load a saved workout"},
+            {"method": "GET", "path": "/api/workouts/exists/<name>", "description": "Check if workout exists"},
         ],
     })
 
@@ -82,6 +87,54 @@ def get_stats():
     """Return data collection statistics."""
     stats = data_collector.get_stats()
     return jsonify(stats)
+
+
+@app.route("/api/workouts/save", methods=["POST"])
+def save_workout():
+    """Save a workout with a user-chosen name."""
+    if not request.is_json:
+        return jsonify({"error": "Request must be JSON"}), 400
+
+    data = request.get_json()
+
+    name = data.get("name")
+    workout = data.get("workout")
+    input_params = data.get("input_params")
+
+    if not name:
+        return jsonify({"success": False, "error": "Name is required"}), 400
+
+    if not workout:
+        return jsonify({"success": False, "error": "Workout data is required"}), 400
+
+    result = workout_storage.save_workout(name, workout, input_params)
+
+    if not result.get("success"):
+        return jsonify(result), 400
+
+    return jsonify(result), 201
+
+
+@app.route("/api/workouts/load/<path:name>", methods=["GET"])
+def load_workout(name):
+    """Load a saved workout by name."""
+    name = unquote(name)
+
+    result = workout_storage.load_workout(name)
+
+    if not result:
+        return jsonify({"success": False, "error": "No workout found with that name"}), 404
+
+    return jsonify(result)
+
+
+@app.route("/api/workouts/exists/<path:name>", methods=["GET"])
+def workout_exists(name):
+    """Check if a workout with the given name exists."""
+    name = unquote(name)
+
+    result = workout_storage.workout_exists(name)
+    return jsonify(result)
 
 
 @app.errorhandler(400)

@@ -3,6 +3,7 @@ const API_URL = 'http://localhost:5000';
 let currentUnit = 'metric';
 let exercisesCache = [];
 let currentWorkoutData = null;
+let currentInputParams = null;
 let activeSwapContext = null;
 
 // Store values separately for each unit system
@@ -89,6 +90,29 @@ async function fetchExercises() {
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || 'Failed to fetch exercises');
     return result.exercises;
+}
+
+async function saveWorkoutAPI(name, workout, inputParams) {
+    const response = await fetch(`${API_URL}/api/workouts/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, workout, input_params: inputParams })
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Failed to save workout');
+    return result;
+}
+
+async function loadWorkoutAPI(name) {
+    const response = await fetch(`${API_URL}/api/workouts/load/${encodeURIComponent(name)}`);
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'No workout found with that name');
+    return result;
+}
+
+async function checkNameExists(name) {
+    const response = await fetch(`${API_URL}/api/workouts/exists/${encodeURIComponent(name)}`);
+    return await response.json();
 }
 
 // Render functions
@@ -420,12 +444,139 @@ async function handleWorkoutSubmit(e) {
         if (data.equipment.length === 0) {
             throw new Error('Please select at least one equipment option');
         }
+        currentInputParams = data;
         const result = await suggestWorkout(data);
         renderWorkoutPlan(result);
     } catch (err) {
         showError(form, err.message || 'Cannot connect to server. Make sure the backend is running.');
     } finally {
         setLoading(form, false);
+    }
+}
+
+// Save modal functions
+function showSaveModal() {
+    $('#save-name').value = '';
+    $('#name-char-count').textContent = '0';
+    hide('#save-exists-warning');
+    hide('#save-error');
+    hide('#save-success');
+    show('#save-workout-form');
+    show('#save-modal');
+    $('#save-name').focus();
+}
+
+function hideSaveModal() {
+    hide('#save-modal');
+}
+
+function resetSaveModal() {
+    $('#save-name').value = '';
+    $('#name-char-count').textContent = '0';
+    hide('#save-exists-warning');
+    hide('#save-error');
+    hide('#save-success');
+    show('#save-workout-form');
+}
+
+function updateCharCount() {
+    const input = $('#save-name');
+    $('#name-char-count').textContent = input.value.length;
+}
+
+async function handleSaveSubmit(e) {
+    e.preventDefault();
+
+    const name = $('#save-name').value.trim();
+    if (!name) return;
+
+    const submitBtn = $('#save-submit-btn');
+    const text = submitBtn.querySelector('.btn-text');
+    const spinner = submitBtn.querySelector('.btn-spinner');
+
+    submitBtn.disabled = true;
+    text.style.display = 'none';
+    spinner.style.display = '';
+    hide('#save-error');
+
+    try {
+        const result = await saveWorkoutAPI(name, currentWorkoutData, currentInputParams);
+        hide('#save-workout-form');
+        $('#saved-name').textContent = result.name;
+        show('#save-success');
+    } catch (err) {
+        const errorEl = $('#save-error');
+        errorEl.textContent = err.message;
+        show(errorEl);
+    } finally {
+        submitBtn.disabled = false;
+        text.style.display = '';
+        spinner.style.display = 'none';
+    }
+}
+
+let nameCheckTimeout = null;
+async function handleNameInput() {
+    updateCharCount();
+    hide('#save-exists-warning');
+
+    const name = $('#save-name').value.trim();
+    if (name.length < 3) return;
+
+    clearTimeout(nameCheckTimeout);
+    nameCheckTimeout = setTimeout(async () => {
+        try {
+            const result = await checkNameExists(name);
+            if (result.exists) {
+                show('#save-exists-warning');
+            }
+        } catch (err) {
+            // Ignore check errors
+        }
+    }, 300);
+}
+
+// Load workout functions
+function toggleLoadForm() {
+    const loadForm = $('#load-workout-form');
+    if (loadForm.style.display === 'none') {
+        show(loadForm);
+        $('#load-name').focus();
+    } else {
+        hide(loadForm);
+    }
+}
+
+function setLoadLoading(loading) {
+    const btn = $('#load-btn');
+    const text = btn.querySelector('.btn-text');
+    const spinner = btn.querySelector('.btn-spinner');
+
+    btn.disabled = loading;
+    text.style.display = loading ? 'none' : '';
+    spinner.style.display = loading ? '' : 'none';
+}
+
+async function handleLoadWorkout() {
+    const name = $('#load-name').value.trim();
+    if (!name) return;
+
+    hide('#load-error');
+    setLoadLoading(true);
+
+    try {
+        const result = await loadWorkoutAPI(name);
+        currentWorkoutData = result.workout;
+        currentInputParams = result.input_params;
+        renderWorkoutPlan(result.workout);
+        hide('#load-workout-form');
+        $('#load-name').value = '';
+    } catch (err) {
+        const errorEl = $('#load-error');
+        errorEl.textContent = err.message;
+        show(errorEl);
+    } finally {
+        setLoadLoading(false);
     }
 }
 
@@ -445,12 +596,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     $('#calorie-form').addEventListener('submit', handleCalorieSubmit);
     $('#workout-form').addEventListener('submit', handleWorkoutSubmit);
 
-    // Modal
-    $('.modal-overlay').addEventListener('click', hideExerciseModal);
-    $('.modal-close').addEventListener('click', hideExerciseModal);
+    // Exercise Modal
+    $('#exercise-modal .modal-overlay').addEventListener('click', hideExerciseModal);
+    $('#exercise-modal .modal-close').addEventListener('click', hideExerciseModal);
+
+    // Save workout
+    $('#save-workout-btn').addEventListener('click', showSaveModal);
+    $('#save-modal .modal-overlay').addEventListener('click', hideSaveModal);
+    $('#save-modal-close').addEventListener('click', hideSaveModal);
+    $('#save-cancel').addEventListener('click', hideSaveModal);
+    $('#save-done').addEventListener('click', () => {
+        hideSaveModal();
+        resetSaveModal();
+    });
+    $('#save-workout-form').addEventListener('submit', handleSaveSubmit);
+    $('#save-name').addEventListener('input', handleNameInput);
+
+    // Load workout
+    $('#load-toggle').addEventListener('click', toggleLoadForm);
+    $('#load-btn').addEventListener('click', handleLoadWorkout);
+    $('#load-name').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleLoadWorkout();
+        }
+    });
+
+    // Escape key handling
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             hideExerciseModal();
+            hideSaveModal();
             hideSwapPopup();
         }
     });

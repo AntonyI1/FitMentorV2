@@ -151,6 +151,20 @@
             <h2>Workout Planner</h2>
             <p class="section-subtitle">Generate a personalized workout plan based on your goals and available equipment</p>
 
+            <div class="load-workout-section">
+                <button type="button" class="load-toggle" id="load-toggle">Have a saved workout? Load it</button>
+                <div id="load-workout-form" class="load-form" style="display: none;">
+                    <div class="load-input-row">
+                        <input type="text" id="load-name" placeholder="Enter your workout name" class="load-input">
+                        <button type="button" class="btn btn-primary" id="load-btn">
+                            <span class="btn-text">Load</span>
+                            <span class="btn-spinner" style="display: none;"></span>
+                        </button>
+                    </div>
+                    <div id="load-error" class="form-error" style="display: none;"></div>
+                </div>
+            </div>
+
             <form id="workout-form" class="form">
                 <div class="form-row">
                     <div class="form-group">
@@ -243,7 +257,10 @@
 
             <div id="workout-results" class="results" style="display: none;">
                 <div class="split-overview">
-                    <h3 id="split-name">-</h3>
+                    <div class="split-overview-header">
+                        <h3 id="split-name">-</h3>
+                        <button type="button" class="btn btn-save" id="save-workout-btn">Save Workout</button>
+                    </div>
                     <div class="progression-info">
                         <strong>Progression:</strong> <span id="progression-method">-</span>
                         <p id="progression-details">-</p>
@@ -288,6 +305,37 @@
     <div id="swap-popup" class="swap-popup" style="display: none;">
         <div class="swap-popup-header">Switch Exercise</div>
         <div class="swap-popup-list"></div>
+    </div>
+
+    <div id="save-modal" class="modal" style="display: none;">
+        <div class="modal-overlay"></div>
+        <div class="modal-content save-modal-content">
+            <button class="modal-close" id="save-modal-close">&times;</button>
+            <h3>Save Workout</h3>
+            <form id="save-workout-form">
+                <div class="form-group">
+                    <label for="save-name">Enter a name for your workout</label>
+                    <input type="text" id="save-name" placeholder="e.g., Tony" minlength="3" maxlength="30" required>
+                    <div class="char-count"><span id="name-char-count">0</span>/30</div>
+                </div>
+                <div id="save-exists-warning" class="save-warning" style="display: none;">
+                    A workout with this name exists. Saving will overwrite it.
+                </div>
+                <div id="save-error" class="form-error" style="display: none;"></div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn btn-secondary" id="save-cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="save-submit-btn">
+                        <span class="btn-text">Save</span>
+                        <span class="btn-spinner" style="display: none;"></span>
+                    </button>
+                </div>
+            </form>
+            <div id="save-success" class="save-success" style="display: none;">
+                <div class="save-success-icon">&#10003;</div>
+                <p>Saved as "<span id="saved-name"></span>"</p>
+                <button type="button" class="btn btn-primary" id="save-done">Done</button>
+            </div>
+        </div>
     </div>
 
     <footer class="footer">

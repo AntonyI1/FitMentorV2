@@ -5,6 +5,7 @@ let exercisesCache = [];
 let currentWorkoutData = null;
 let currentInputParams = null;
 let activeSwapContext = null;
+let pendingRemoval = null;
 
 // Store values separately for each unit system
 let metricValues = { height: '', weight: '' };
@@ -140,7 +141,7 @@ function renderCalorieResults(data) {
     $('#calorie-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function renderWorkoutPlan(data) {
+function renderWorkoutPlan(data, scrollToResults = true) {
     currentWorkoutData = data;
 
     $('#split-name').textContent = data.split.name;
@@ -155,15 +156,18 @@ function renderWorkoutPlan(data) {
                 <span>- ${workout.muscle_groups.join(', ')}</span>
             </div>
             <div class="exercise-list">
-                ${workout.exercises.map((ex, exIdx) => {
-                    const hasAlternatives = getAlternativeExercises(ex.name).length > 0;
-                    return `
-                    <div class="exercise-item" data-exercise="${ex.name}" data-day-index="${dayIdx}" data-exercise-index="${exIdx}">
-                        <span class="exercise-name">${ex.name}</span>
-                        ${hasAlternatives ? `<button class="swap-btn" title="Switch exercise">&#8644;</button>` : ''}
-                        <span class="exercise-details">${ex.sets} x ${ex.reps} | ${ex.rest_seconds}s rest</span>
-                    </div>
-                `}).join('')}
+                ${workout.exercises.length === 0
+                    ? '<div class="exercise-list-empty">No exercises</div>'
+                    : workout.exercises.map((ex, exIdx) => {
+                        const hasAlternatives = getAlternativeExercises(ex.name).length > 0;
+                        return `
+                        <div class="exercise-item" data-exercise="${ex.name}" data-day-index="${dayIdx}" data-exercise-index="${exIdx}">
+                            <span class="exercise-name">${ex.name}</span>
+                            ${hasAlternatives ? `<button class="swap-btn" title="Switch exercise">&#8644;</button>` : ''}
+                            <button class="remove-btn" title="Remove exercise">&#10005;</button>
+                            <span class="exercise-details">${ex.sets} x ${ex.reps} | ${ex.rest_seconds}s rest</span>
+                        </div>
+                    `}).join('')}
             </div>
         </div>
     `).join('');
@@ -171,7 +175,7 @@ function renderWorkoutPlan(data) {
     // Add click handlers for exercise items (opens modal)
     $$('.exercise-item').forEach(item => {
         item.addEventListener('click', (e) => {
-            if (e.target.closest('.swap-btn')) return;
+            if (e.target.closest('.swap-btn') || e.target.closest('.remove-btn')) return;
             const name = item.dataset.exercise;
             const exercise = exercisesCache.find(e => e.name === name);
             if (exercise) showExerciseModal(exercise);
@@ -190,8 +194,23 @@ function renderWorkoutPlan(data) {
         });
     });
 
+    // Add click handlers for remove buttons
+    $$('.remove-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const item = btn.closest('.exercise-item');
+            const exerciseName = item.dataset.exercise;
+            const dayIndex = parseInt(item.dataset.dayIndex);
+            const exerciseIndex = parseInt(item.dataset.exerciseIndex);
+            hideSwapPopup();
+            showConfirmRemoveModal(exerciseName, dayIndex, exerciseIndex);
+        });
+    });
+
     show('#workout-results');
-    $('#workout-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (scrollToResults) {
+        $('#workout-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 }
 
 function showExerciseModal(exercise) {
@@ -289,9 +308,35 @@ function swapExercise(originalName, newExerciseName, dayIndex, exerciseIndex) {
     // Update the exercise name in the data (keep sets, reps, rest)
     exercise.name = newExerciseName;
 
-    // Re-render the workout plan
-    renderWorkoutPlan(currentWorkoutData);
+    // Re-render the workout plan without scrolling
+    renderWorkoutPlan(currentWorkoutData, false);
     hideSwapPopup();
+}
+
+// Confirm remove modal functions
+function showConfirmRemoveModal(exerciseName, dayIndex, exerciseIndex) {
+    pendingRemoval = { dayIndex, exerciseIndex, exerciseName };
+    $('#confirm-exercise-name').textContent = exerciseName;
+    show('#confirm-remove-modal');
+}
+
+function hideConfirmRemoveModal() {
+    hide('#confirm-remove-modal');
+    pendingRemoval = null;
+}
+
+function removeExercise() {
+    if (!pendingRemoval) return;
+
+    const { dayIndex, exerciseIndex } = pendingRemoval;
+    const workout = currentWorkoutData.workouts[dayIndex];
+
+    // Remove exercise from array
+    workout.exercises.splice(exerciseIndex, 1);
+
+    // Re-render the workout plan without scrolling
+    renderWorkoutPlan(currentWorkoutData, false);
+    hideConfirmRemoveModal();
 }
 
 // Form handling
@@ -622,12 +667,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
+    // Confirm remove modal
+    $('#confirm-remove-modal .modal-overlay').addEventListener('click', hideConfirmRemoveModal);
+    $('#confirm-cancel').addEventListener('click', hideConfirmRemoveModal);
+    $('#confirm-remove').addEventListener('click', removeExercise);
+
     // Escape key handling
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             hideExerciseModal();
             hideSaveModal();
             hideSwapPopup();
+            hideConfirmRemoveModal();
         }
     });
 

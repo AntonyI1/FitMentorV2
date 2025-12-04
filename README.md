@@ -6,7 +6,7 @@ Evidence-based fitness coaching application.
 
 - Calorie calculator using Mifflin-St Jeor equation
 - Workout plan generator with proven training splits
-- Exercise database (38 exercises)
+- Exercise database (120+ exercises)
 
 ## Setup
 

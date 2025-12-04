@@ -2,10 +2,25 @@ const API_URL = 'http://localhost:5000';
 
 let currentUnit = 'metric';
 let exercisesCache = [];
+let currentWorkoutData = null;
+let activeSwapContext = null;
 
 // Store values separately for each unit system
 let metricValues = { height: '', weight: '' };
 let imperialValues = { heightFt: '', heightIn: '', weight: '' };
+
+// Exercise swap helpers
+function getAlternativeExercises(exerciseName) {
+    const exercise = exercisesCache.find(e => e.name === exerciseName);
+    if (!exercise) return [];
+
+    const subRegion = exercise.subcategory;
+    if (!subRegion) return [];
+
+    return exercisesCache.filter(e =>
+        e.subcategory === subRegion && e.name !== exerciseName
+    );
+}
 
 // Unit conversion
 function lbsToKg(lbs) {
@@ -102,34 +117,52 @@ function renderCalorieResults(data) {
 }
 
 function renderWorkoutPlan(data) {
+    currentWorkoutData = data;
+
     $('#split-name').textContent = data.split.name;
     $('#progression-method').textContent = data.progression.method;
     $('#progression-details').textContent = `${data.progression.increment} ${data.progression.deload}`;
 
     const daysContainer = $('#workout-days-list');
-    daysContainer.innerHTML = data.workouts.map(workout => `
+    daysContainer.innerHTML = data.workouts.map((workout, dayIdx) => `
         <div class="day-card">
             <div class="day-header">
                 ${workout.day}
                 <span>- ${workout.muscle_groups.join(', ')}</span>
             </div>
             <div class="exercise-list">
-                ${workout.exercises.map(ex => `
-                    <div class="exercise-item" data-exercise="${ex.name}">
+                ${workout.exercises.map((ex, exIdx) => {
+                    const hasAlternatives = getAlternativeExercises(ex.name).length > 0;
+                    return `
+                    <div class="exercise-item" data-exercise="${ex.name}" data-day-index="${dayIdx}" data-exercise-index="${exIdx}">
                         <span class="exercise-name">${ex.name}</span>
+                        ${hasAlternatives ? `<button class="swap-btn" title="Switch exercise">&#8644;</button>` : ''}
                         <span class="exercise-details">${ex.sets} x ${ex.reps} | ${ex.rest_seconds}s rest</span>
                     </div>
-                `).join('')}
+                `}).join('')}
             </div>
         </div>
     `).join('');
 
-    // Add click handlers for exercise items
+    // Add click handlers for exercise items (opens modal)
     $$('.exercise-item').forEach(item => {
-        item.addEventListener('click', () => {
+        item.addEventListener('click', (e) => {
+            if (e.target.closest('.swap-btn')) return;
             const name = item.dataset.exercise;
             const exercise = exercisesCache.find(e => e.name === name);
             if (exercise) showExerciseModal(exercise);
+        });
+    });
+
+    // Add click handlers for swap buttons
+    $$('.swap-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const item = btn.closest('.exercise-item');
+            const exerciseName = item.dataset.exercise;
+            const dayIndex = parseInt(item.dataset.dayIndex);
+            const exerciseIndex = parseInt(item.dataset.exerciseIndex);
+            showSwapPopup(exerciseName, dayIndex, exerciseIndex, btn);
         });
     });
 
@@ -149,6 +182,92 @@ function showExerciseModal(exercise) {
 
 function hideExerciseModal() {
     hide('#exercise-modal');
+}
+
+// Swap popup functions
+function showSwapPopup(exerciseName, dayIndex, exerciseIndex, buttonEl) {
+    hideSwapPopup();
+
+    const alternatives = getAlternativeExercises(exerciseName);
+    const popup = $('#swap-popup');
+    const list = popup.querySelector('.swap-popup-list');
+
+    if (alternatives.length === 0) {
+        list.innerHTML = '<div class="swap-popup-empty">No alternatives available</div>';
+    } else {
+        list.innerHTML = alternatives.map(ex => {
+            const tierBadge = ex.nippard_tier
+                ? `<span class="tier-badge tier-${ex.nippard_tier.toLowerCase().replace('+', '-plus')}">${ex.nippard_tier}</span>`
+                : '';
+            return `
+                <div class="swap-popup-item" data-exercise-name="${ex.name}">
+                    <span class="swap-popup-item-name">${ex.name}</span>
+                    <span class="swap-popup-item-meta">
+                        ${tierBadge}
+                        <span class="difficulty-tag">${ex.difficulty}</span>
+                    </span>
+                </div>
+            `;
+        }).join('');
+
+        // Add click handlers for swap items
+        list.querySelectorAll('.swap-popup-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const newExerciseName = item.dataset.exerciseName;
+                swapExercise(exerciseName, newExerciseName, dayIndex, exerciseIndex);
+            });
+        });
+    }
+
+    // Store context for potential use
+    activeSwapContext = { exerciseName, dayIndex, exerciseIndex };
+
+    // Position popup near button
+    positionSwapPopup(buttonEl);
+    show(popup);
+}
+
+function hideSwapPopup() {
+    hide('#swap-popup');
+    activeSwapContext = null;
+}
+
+function positionSwapPopup(buttonEl) {
+    const popup = $('#swap-popup');
+    const rect = buttonEl.getBoundingClientRect();
+    const popupHeight = 300;
+    const popupWidth = 280;
+
+    let top = rect.bottom + 8;
+    let left = rect.left - popupWidth + rect.width;
+
+    // Check if popup goes below viewport
+    if (top + popupHeight > window.innerHeight) {
+        top = rect.top - popupHeight - 8;
+    }
+
+    // Check horizontal bounds
+    if (left < 8) {
+        left = 8;
+    }
+    if (left + popupWidth > window.innerWidth - 8) {
+        left = window.innerWidth - popupWidth - 8;
+    }
+
+    popup.style.top = `${top}px`;
+    popup.style.left = `${left}px`;
+}
+
+function swapExercise(originalName, newExerciseName, dayIndex, exerciseIndex) {
+    const workout = currentWorkoutData.workouts[dayIndex];
+    const exercise = workout.exercises[exerciseIndex];
+
+    // Update the exercise name in the data (keep sets, reps, rest)
+    exercise.name = newExerciseName;
+
+    // Re-render the workout plan
+    renderWorkoutPlan(currentWorkoutData);
+    hideSwapPopup();
 }
 
 // Form handling
@@ -330,6 +449,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     $('.modal-overlay').addEventListener('click', hideExerciseModal);
     $('.modal-close').addEventListener('click', hideExerciseModal);
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') hideExerciseModal();
+        if (e.key === 'Escape') {
+            hideExerciseModal();
+            hideSwapPopup();
+        }
+    });
+
+    // Swap popup - close when clicking outside
+    document.addEventListener('click', (e) => {
+        const popup = $('#swap-popup');
+        if (popup.style.display !== 'none' && !popup.contains(e.target) && !e.target.closest('.swap-btn')) {
+            hideSwapPopup();
+        }
     });
 });

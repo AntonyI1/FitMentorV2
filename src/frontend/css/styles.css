@@ -524,7 +524,6 @@ body {
 
 .exercise-item {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     padding: 12px 16px;
     background: var(--surface);
@@ -532,6 +531,7 @@ body {
     border-radius: var(--radius);
     cursor: pointer;
     transition: all 0.2s;
+    gap: 8px;
 }
 
 .exercise-item:hover {
@@ -541,15 +541,139 @@ body {
 
 .exercise-name {
     font-weight: 500;
+    flex: 1;
 }
 
 .exercise-details {
     font-size: 14px;
     color: var(--text-light);
+    flex-shrink: 0;
 }
 
 .exercise-item:hover .exercise-details {
     color: rgba(255, 255, 255, 0.8);
+}
+
+/* Swap Button */
+.swap-btn {
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    opacity: 0.4;
+    padding: 4px 8px;
+    margin-left: auto;
+    margin-right: 12px;
+    transition: opacity 0.2s;
+    color: inherit;
+    flex-shrink: 0;
+}
+
+.swap-btn:hover {
+    opacity: 0.8;
+}
+
+.exercise-item:hover .swap-btn {
+    opacity: 0.7;
+}
+
+.exercise-item:hover .swap-btn:hover {
+    opacity: 1;
+}
+
+/* Swap Popup */
+.swap-popup {
+    position: fixed;
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    min-width: 260px;
+    max-width: 320px;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 150;
+}
+
+.swap-popup-header {
+    padding: 12px 16px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+}
+
+.swap-popup-list {
+    padding: 4px 0;
+}
+
+.swap-popup-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: background 0.15s;
+    gap: 12px;
+}
+
+.swap-popup-item:hover {
+    background: var(--background);
+}
+
+.swap-popup-item-name {
+    flex: 1;
+    font-size: 14px;
+}
+
+.swap-popup-item-meta {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.tier-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--primary);
+    color: white;
+}
+
+.tier-badge.tier-s-plus,
+.tier-badge.tier-s {
+    background: #F59E0B;
+}
+
+.tier-badge.tier-a-plus,
+.tier-badge.tier-a {
+    background: var(--primary);
+}
+
+.tier-badge.tier-b-plus,
+.tier-badge.tier-b {
+    background: var(--success);
+}
+
+.tier-badge.tier-c,
+.tier-badge.tier-d {
+    background: var(--text-light);
+}
+
+.difficulty-tag {
+    font-size: 11px;
+    color: var(--text-light);
+    text-transform: capitalize;
+}
+
+.swap-popup-empty {
+    padding: 16px;
+    text-align: center;
+    color: var(--text-light);
+    font-size: 14px;
 }
 
 /* Modal */

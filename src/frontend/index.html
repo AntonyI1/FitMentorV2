@@ -4,278 +4,412 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FitMentor - Evidence-Based Fitness Coaching</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <nav class="navbar">
-        <div class="container">
-            <a href="#" class="brand">FitMentor</a>
-        </div>
-    </nav>
-
-    <section class="hero">
-        <div class="container">
-            <h1>Your Personal <span class="gradient-text">Fitness Coach</span></h1>
-            <p class="hero-subtitle">Evidence-based calorie calculations and personalized workout plans</p>
-            <div class="cta-buttons">
-                <a href="#calorie-section" class="btn btn-primary">Calculate Calories</a>
-                <a href="#workout-section" class="btn btn-secondary">Plan Workout</a>
+    <!-- Landing Page -->
+    <div id="landing-view">
+        <nav class="navbar">
+            <div class="nav-container">
+                <a href="#" class="brand">
+                    <i data-lucide="dumbbell" class="brand-icon"></i>
+                    <span>FitMentor</span>
+                </a>
+                <button class="btn btn-primary nav-cta" id="nav-get-started">Open App</button>
             </div>
-        </div>
-    </section>
+        </nav>
 
-    <section id="calorie-section" class="section">
-        <div class="container">
-            <h2>Calorie Calculator</h2>
-            <p class="section-subtitle">Calculate your daily calorie and macro targets using the Mifflin-St Jeor equation</p>
-
-            <div class="unit-toggle">
-                <button type="button" class="unit-btn active" data-unit="metric">Metric</button>
-                <button type="button" class="unit-btn" data-unit="imperial">Imperial</button>
+        <section class="hero-minimal">
+            <div class="container">
+                <h1>FitMentor</h1>
+                <p class="hero-desc">A free tool for calculating your nutrition targets and generating workout programs. Uses the Mifflin-St Jeor equation for calories and builds training splits based on your available equipment and experience level.</p>
+                <button class="btn btn-primary btn-lg" id="hero-get-started">
+                    <span>Open App</span>
+                    <i data-lucide="arrow-right"></i>
+                </button>
             </div>
+        </section>
 
-            <form id="calorie-form" class="form">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="calc-age">Age</label>
-                        <input type="number" id="calc-age" name="age" min="18" max="80" required placeholder="18-80">
+        <section class="tools-preview">
+            <div class="container">
+                <div class="tools-grid">
+                    <div class="tool-card" id="tool-calories">
+                        <div class="tool-icon">
+                            <i data-lucide="flame"></i>
+                        </div>
+                        <div class="tool-info">
+                            <h3>Calorie Calculator</h3>
+                            <p>Get your BMR, TDEE, and macro breakdown based on your stats and goals.</p>
+                        </div>
+                        <i data-lucide="arrow-right" class="tool-arrow"></i>
                     </div>
-                    <div class="form-group">
-                        <label for="calc-gender">Gender</label>
-                        <select id="calc-gender" name="gender" required>
-                            <option value="">Select...</option>
-                            <option value="male">Male</option>
-                            <option value="female">Female</option>
-                        </select>
+                    <div class="tool-card" id="tool-workout">
+                        <div class="tool-icon">
+                            <i data-lucide="dumbbell"></i>
+                        </div>
+                        <div class="tool-info">
+                            <h3>Workout Planner</h3>
+                            <p>Generate a training split with exercise selection, sets, reps, and progression.</p>
+                        </div>
+                        <i data-lucide="arrow-right" class="tool-arrow"></i>
                     </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group" id="height-metric">
-                        <label for="calc-height">Height (cm)</label>
-                        <input type="number" id="calc-height" name="height" min="140" max="220" step="0.1" required placeholder="140-220">
-                    </div>
-                    <div class="form-group height-imperial" style="display: none;">
-                        <label for="calc-height-ft">Height</label>
-                        <div class="input-row">
-                            <input type="number" id="calc-height-ft" name="height_ft" min="4" max="7" placeholder="ft">
-                            <input type="number" id="calc-height-in" name="height_in" min="0" max="11" placeholder="in">
+                    <div class="tool-card disabled">
+                        <div class="tool-icon">
+                            <i data-lucide="trending-up"></i>
+                        </div>
+                        <div class="tool-info">
+                            <h3>Progress Tracking</h3>
+                            <p>Log workouts and track strength gains over time.</p>
+                            <span class="soon-tag">Coming soon</span>
                         </div>
                     </div>
-                    <div class="form-group" id="weight-group">
-                        <label for="calc-weight" id="weight-label">Weight (kg)</label>
-                        <input type="number" id="calc-weight" name="weight" min="40" max="230" step="0.1" required placeholder="40-230">
-                    </div>
                 </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="calc-activity">Activity Level</label>
-                        <select id="calc-activity" name="activity_level" required>
-                            <option value="">Select...</option>
-                            <option value="sedentary">Sedentary (little/no exercise)</option>
-                            <option value="light">Light (1-3 days/week)</option>
-                            <option value="moderate">Moderate (3-5 days/week)</option>
-                            <option value="active">Active (6-7 days/week)</option>
-                            <option value="very_active">Very Active (2x/day)</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="calc-goal">Goal</label>
-                        <select id="calc-goal" name="goal" required>
-                            <option value="">Select...</option>
-                            <option value="lose">Lose Weight</option>
-                            <option value="maintain">Maintain Weight</option>
-                            <option value="gain">Gain Weight/Muscle</option>
-                        </select>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn btn-primary btn-block">
-                    <span class="btn-text">Calculate</span>
-                    <span class="btn-spinner" style="display: none;"></span>
-                </button>
-
-                <div class="form-error" style="display: none;"></div>
-            </form>
-
-            <div id="calorie-results" class="results" style="display: none;">
-                <div class="stats-cards">
-                    <div class="stat-card">
-                        <span class="stat-label">BMR</span>
-                        <span class="stat-value" id="result-bmr">-</span>
-                        <span class="stat-unit">kcal/day</span>
-                    </div>
-                    <div class="stat-card">
-                        <span class="stat-label">TDEE</span>
-                        <span class="stat-value" id="result-tdee">-</span>
-                        <span class="stat-unit">kcal/day</span>
-                    </div>
-                    <div class="stat-card highlight">
-                        <span class="stat-label">Target</span>
-                        <span class="stat-value" id="result-target">-</span>
-                        <span class="stat-unit">kcal/day</span>
-                    </div>
-                </div>
-
-                <h3>Macronutrients</h3>
-                <div class="macro-cards">
-                    <div class="macro-card protein">
-                        <span class="macro-name">Protein</span>
-                        <span class="macro-grams" id="macro-protein-grams">-g</span>
-                        <span class="macro-calories" id="macro-protein-cals">- kcal</span>
-                        <span class="macro-percent" id="macro-protein-pct">-%</span>
-                    </div>
-                    <div class="macro-card carbs">
-                        <span class="macro-name">Carbs</span>
-                        <span class="macro-grams" id="macro-carbs-grams">-g</span>
-                        <span class="macro-calories" id="macro-carbs-cals">- kcal</span>
-                        <span class="macro-percent" id="macro-carbs-pct">-%</span>
-                    </div>
-                    <div class="macro-card fats">
-                        <span class="macro-name">Fats</span>
-                        <span class="macro-grams" id="macro-fats-grams">-g</span>
-                        <span class="macro-calories" id="macro-fats-cals">- kcal</span>
-                        <span class="macro-percent" id="macro-fats-pct">-%</span>
-                    </div>
-                </div>
-
-                <h3>Recommendations</h3>
-                <ul class="recommendations" id="recommendations"></ul>
             </div>
+        </section>
+
+        <section class="info-section">
+            <div class="container">
+                <div class="info-grid">
+                    <div class="info-block">
+                        <h3>How it works</h3>
+                        <p>Enter your details (age, weight, goals, equipment) and the app generates personalized recommendations. Workout plans include exercise alternatives so you can swap movements that don't suit you.</p>
+                    </div>
+                    <div class="info-block">
+                        <h3>The approach</h3>
+                        <p>Calorie calculations use Mifflin-St Jeor (the most accurate predictive equation for most people). Training programs follow standard periodization principles with appropriate volume for your experience level.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="footer-minimal">
+            <div class="container">
+                <div class="footer-row">
+                    <a href="#" class="brand">
+                        <i data-lucide="dumbbell" class="brand-icon"></i>
+                        <span>FitMentor</span>
+                    </a>
+                    <p class="footer-note">Free and open. No accounts, no tracking, no catch.</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- App View -->
+    <div id="app-view" style="display: none;">
+        <header class="app-header">
+            <div class="app-header-container">
+                <a href="#" class="brand" id="app-brand">
+                    <i data-lucide="dumbbell" class="brand-icon"></i>
+                    <span>FitMentor</span>
+                </a>
+                <button class="btn btn-ghost btn-sm" id="back-to-home">
+                    <i data-lucide="arrow-left"></i>
+                    <span>Back to Home</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="app-tabs">
+            <button class="app-tab active" data-tab="calories">
+                <i data-lucide="flame"></i>
+                <span>Calories</span>
+            </button>
+            <button class="app-tab" data-tab="workout">
+                <i data-lucide="dumbbell"></i>
+                <span>Workout</span>
+            </button>
+            <button class="app-tab disabled" data-tab="progress" disabled>
+                <i data-lucide="trending-up"></i>
+                <span>Progress</span>
+                <span class="tab-badge">Soon</span>
+            </button>
         </div>
-    </section>
 
-    <section id="workout-section" class="section section-alt">
-        <div class="container">
-            <h2>Workout Planner</h2>
-            <p class="section-subtitle">Generate a personalized workout plan based on your goals and available equipment</p>
+        <main class="app-main">
+            <!-- Calories Tab -->
+            <div id="tab-calories" class="tab-content active">
+                <div class="app-container">
+                    <div class="tool-header">
+                        <h1>Calorie Calculator</h1>
+                        <p>Calculate your daily calorie and macro targets using the Mifflin-St Jeor equation</p>
+                    </div>
 
-            <div class="load-workout-section">
-                <button type="button" class="load-toggle" id="load-toggle">Have a saved workout? Load it</button>
-                <div id="load-workout-form" class="load-form" style="display: none;">
-                    <div class="load-input-row">
-                        <input type="text" id="load-name" placeholder="Enter your workout name" class="load-input">
-                        <button type="button" class="btn btn-primary" id="load-btn">
-                            <span class="btn-text">Load</span>
+                    <div class="unit-toggle">
+                        <button type="button" class="unit-btn active" data-unit="metric">Metric</button>
+                        <button type="button" class="unit-btn" data-unit="imperial">Imperial</button>
+                    </div>
+
+                    <form id="calorie-form" class="form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="calc-age">Age</label>
+                                <input type="number" id="calc-age" name="age" min="18" max="80" required placeholder="18-80">
+                            </div>
+                            <div class="form-group">
+                                <label for="calc-gender">Gender</label>
+                                <select id="calc-gender" name="gender" required>
+                                    <option value="">Select...</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group" id="height-metric">
+                                <label for="calc-height">Height (cm)</label>
+                                <input type="number" id="calc-height" name="height" min="140" max="220" step="0.1" required placeholder="140-220">
+                            </div>
+                            <div class="form-group height-imperial" style="display: none;">
+                                <label for="calc-height-ft">Height</label>
+                                <div class="input-row">
+                                    <input type="number" id="calc-height-ft" name="height_ft" min="4" max="7" placeholder="ft">
+                                    <input type="number" id="calc-height-in" name="height_in" min="0" max="11" placeholder="in">
+                                </div>
+                            </div>
+                            <div class="form-group" id="weight-group">
+                                <label for="calc-weight" id="weight-label">Weight (kg)</label>
+                                <input type="number" id="calc-weight" name="weight" min="40" max="230" step="0.1" required placeholder="40-230">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="calc-activity">Activity Level</label>
+                                <select id="calc-activity" name="activity_level" required>
+                                    <option value="">Select...</option>
+                                    <option value="sedentary">Sedentary (little/no exercise)</option>
+                                    <option value="light">Light (1-3 days/week)</option>
+                                    <option value="moderate">Moderate (3-5 days/week)</option>
+                                    <option value="active">Active (6-7 days/week)</option>
+                                    <option value="very_active">Very Active (2x/day)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="calc-goal">Goal</label>
+                                <select id="calc-goal" name="goal" required>
+                                    <option value="">Select...</option>
+                                    <option value="lose">Lose Weight</option>
+                                    <option value="maintain">Maintain Weight</option>
+                                    <option value="gain">Gain Weight/Muscle</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-block">
+                            <span class="btn-text">Calculate</span>
                             <span class="btn-spinner" style="display: none;"></span>
                         </button>
+
+                        <div class="form-error" style="display: none;"></div>
+                    </form>
+
+                    <div id="calorie-results" class="results" style="display: none;">
+                        <div class="stats-cards">
+                            <div class="stat-card">
+                                <span class="stat-label">BMR</span>
+                                <span class="stat-value" id="result-bmr">-</span>
+                                <span class="stat-unit">kcal/day</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-label">TDEE</span>
+                                <span class="stat-value" id="result-tdee">-</span>
+                                <span class="stat-unit">kcal/day</span>
+                            </div>
+                            <div class="stat-card highlight">
+                                <span class="stat-label">Target</span>
+                                <span class="stat-value" id="result-target">-</span>
+                                <span class="stat-unit">kcal/day</span>
+                            </div>
+                        </div>
+
+                        <h3>Macronutrients</h3>
+                        <div class="macro-cards">
+                            <div class="macro-card protein">
+                                <span class="macro-name">Protein</span>
+                                <span class="macro-grams" id="macro-protein-grams">-g</span>
+                                <span class="macro-calories" id="macro-protein-cals">- kcal</span>
+                                <span class="macro-percent" id="macro-protein-pct">-%</span>
+                            </div>
+                            <div class="macro-card carbs">
+                                <span class="macro-name">Carbs</span>
+                                <span class="macro-grams" id="macro-carbs-grams">-g</span>
+                                <span class="macro-calories" id="macro-carbs-cals">- kcal</span>
+                                <span class="macro-percent" id="macro-carbs-pct">-%</span>
+                            </div>
+                            <div class="macro-card fats">
+                                <span class="macro-name">Fats</span>
+                                <span class="macro-grams" id="macro-fats-grams">-g</span>
+                                <span class="macro-calories" id="macro-fats-cals">- kcal</span>
+                                <span class="macro-percent" id="macro-fats-pct">-%</span>
+                            </div>
+                        </div>
+
+                        <h3>Recommendations</h3>
+                        <ul class="recommendations" id="recommendations"></ul>
                     </div>
-                    <div id="load-error" class="form-error" style="display: none;"></div>
                 </div>
             </div>
 
-            <form id="workout-form" class="form">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="workout-gender">Gender</label>
-                        <select id="workout-gender" name="gender" required>
-                            <option value="">Select...</option>
-                            <option value="male">Male</option>
-                            <option value="female">Female</option>
-                        </select>
+            <!-- Workout Tab -->
+            <div id="tab-workout" class="tab-content">
+                <div class="app-container">
+                    <div class="tool-header">
+                        <h1>Workout Planner</h1>
+                        <p>Generate a personalized workout plan based on your goals and available equipment</p>
                     </div>
-                    <div class="form-group">
-                        <label for="workout-goal">Goal</label>
-                        <select id="workout-goal" name="goal" required>
-                            <option value="">Select...</option>
-                            <option value="strength">Strength</option>
-                            <option value="hypertrophy">Hypertrophy (Muscle Growth)</option>
-                            <option value="endurance">Endurance</option>
-                            <option value="weight_loss">Weight Loss</option>
-                        </select>
+
+                    <div class="load-workout-section">
+                        <button type="button" class="load-toggle" id="load-toggle">
+                            <i data-lucide="folder-open"></i>
+                            Have a saved workout? Load it
+                        </button>
+                        <div id="load-workout-form" class="load-form" style="display: none;">
+                            <div class="load-input-row">
+                                <input type="text" id="load-name" placeholder="Enter your workout name" class="load-input">
+                                <button type="button" class="btn btn-primary" id="load-btn">
+                                    <span class="btn-text">Load</span>
+                                    <span class="btn-spinner" style="display: none;"></span>
+                                </button>
+                            </div>
+                            <div id="load-error" class="form-error" style="display: none;"></div>
+                        </div>
+                    </div>
+
+                    <form id="workout-form" class="form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="workout-gender">Gender</label>
+                                <select id="workout-gender" name="gender" required>
+                                    <option value="">Select...</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="workout-goal">Goal</label>
+                                <select id="workout-goal" name="goal" required>
+                                    <option value="">Select...</option>
+                                    <option value="strength">Strength</option>
+                                    <option value="hypertrophy">Hypertrophy (Muscle Growth)</option>
+                                    <option value="endurance">Endurance</option>
+                                    <option value="weight_loss">Weight Loss</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="workout-experience">Experience</label>
+                                <select id="workout-experience" name="experience" required>
+                                    <option value="">Select...</option>
+                                    <option value="beginner">Beginner (< 1 year)</option>
+                                    <option value="intermediate">Intermediate (1-3 years)</option>
+                                    <option value="advanced">Advanced (3+ years)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="workout-days">Days Per Week</label>
+                                <select id="workout-days-select" name="days_per_week" required>
+                                    <option value="">Select...</option>
+                                    <option value="3">3 days</option>
+                                    <option value="4">4 days</option>
+                                    <option value="5">5 days</option>
+                                    <option value="6">6 days</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Available Equipment</label>
+                            <div class="checkbox-grid">
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="equipment" value="barbell">
+                                    <span>Barbell</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="equipment" value="dumbbell">
+                                    <span>Dumbbells</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="equipment" value="machine">
+                                    <span>Machines</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="equipment" value="cable">
+                                    <span>Cables</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="equipment" value="bench">
+                                    <span>Bench</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="equipment" value="rack">
+                                    <span>Squat Rack</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="equipment" value="pullup_bar">
+                                    <span>Pull-up Bar</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="equipment" value="bodyweight" checked>
+                                    <span>Bodyweight</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-block">
+                            <span class="btn-text">Generate Plan</span>
+                            <span class="btn-spinner" style="display: none;"></span>
+                        </button>
+
+                        <div class="form-error" style="display: none;"></div>
+                    </form>
+
+                    <div id="workout-results" class="results" style="display: none;">
+                        <div class="split-overview">
+                            <div class="split-overview-header">
+                                <h3 id="split-name">-</h3>
+                                <button type="button" class="btn btn-save" id="save-workout-btn">
+                                    <i data-lucide="save"></i>
+                                    Save Workout
+                                </button>
+                            </div>
+                            <div class="progression-info">
+                                <strong>Progression:</strong> <span id="progression-method">-</span>
+                                <p id="progression-details">-</p>
+                            </div>
+                        </div>
+
+                        <div class="workout-days" id="workout-days-list"></div>
                     </div>
                 </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="workout-experience">Experience</label>
-                        <select id="workout-experience" name="experience" required>
-                            <option value="">Select...</option>
-                            <option value="beginner">Beginner (< 1 year)</option>
-                            <option value="intermediate">Intermediate (1-3 years)</option>
-                            <option value="advanced">Advanced (3+ years)</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="workout-days">Days Per Week</label>
-                        <select id="workout-days-select" name="days_per_week" required>
-                            <option value="">Select...</option>
-                            <option value="3">3 days</option>
-                            <option value="4">4 days</option>
-                            <option value="5">5 days</option>
-                            <option value="6">6 days</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Available Equipment</label>
-                    <div class="checkbox-grid">
-                        <label class="checkbox-item">
-                            <input type="checkbox" name="equipment" value="barbell">
-                            <span>Barbell</span>
-                        </label>
-                        <label class="checkbox-item">
-                            <input type="checkbox" name="equipment" value="dumbbell">
-                            <span>Dumbbells</span>
-                        </label>
-                        <label class="checkbox-item">
-                            <input type="checkbox" name="equipment" value="machine">
-                            <span>Machines</span>
-                        </label>
-                        <label class="checkbox-item">
-                            <input type="checkbox" name="equipment" value="cable">
-                            <span>Cables</span>
-                        </label>
-                        <label class="checkbox-item">
-                            <input type="checkbox" name="equipment" value="bench">
-                            <span>Bench</span>
-                        </label>
-                        <label class="checkbox-item">
-                            <input type="checkbox" name="equipment" value="rack">
-                            <span>Squat Rack</span>
-                        </label>
-                        <label class="checkbox-item">
-                            <input type="checkbox" name="equipment" value="pullup_bar">
-                            <span>Pull-up Bar</span>
-                        </label>
-                        <label class="checkbox-item">
-                            <input type="checkbox" name="equipment" value="bodyweight" checked>
-                            <span>Bodyweight</span>
-                        </label>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn btn-primary btn-block">
-                    <span class="btn-text">Generate Plan</span>
-                    <span class="btn-spinner" style="display: none;"></span>
-                </button>
-
-                <div class="form-error" style="display: none;"></div>
-            </form>
-
-            <div id="workout-results" class="results" style="display: none;">
-                <div class="split-overview">
-                    <div class="split-overview-header">
-                        <h3 id="split-name">-</h3>
-                        <button type="button" class="btn btn-save" id="save-workout-btn">Save Workout</button>
-                    </div>
-                    <div class="progression-info">
-                        <strong>Progression:</strong> <span id="progression-method">-</span>
-                        <p id="progression-details">-</p>
-                    </div>
-                </div>
-
-                <div class="workout-days" id="workout-days-list"></div>
             </div>
-        </div>
-    </section>
 
+            <!-- Progress Tab (Coming Soon) -->
+            <div id="tab-progress" class="tab-content">
+                <div class="app-container">
+                    <div class="coming-soon-page">
+                        <i data-lucide="trending-up"></i>
+                        <h2>Progress Tracking</h2>
+                        <p>Track your workouts, monitor strength gains, and visualize your progress over time.</p>
+                        <span class="coming-soon-badge">Coming Soon</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
     <div id="exercise-modal" class="modal" style="display: none;">
         <div class="modal-overlay"></div>
         <div class="modal-content">
-            <button class="modal-close">&times;</button>
+            <button class="modal-close"><i data-lucide="x"></i></button>
             <h3 id="modal-exercise-name">-</h3>
             <div class="modal-details">
                 <div class="detail-row">
@@ -310,7 +444,7 @@
     <div id="save-modal" class="modal" style="display: none;">
         <div class="modal-overlay"></div>
         <div class="modal-content save-modal-content">
-            <button class="modal-close" id="save-modal-close">&times;</button>
+            <button class="modal-close" id="save-modal-close"><i data-lucide="x"></i></button>
             <h3>Save Workout</h3>
             <form id="save-workout-form">
                 <div class="form-group">
@@ -331,7 +465,7 @@
                 </div>
             </form>
             <div id="save-success" class="save-success" style="display: none;">
-                <div class="save-success-icon">&#10003;</div>
+                <div class="save-success-icon"><i data-lucide="check"></i></div>
                 <p>Saved as "<span id="saved-name"></span>"</p>
                 <button type="button" class="btn btn-primary" id="save-done">Done</button>
             </div>
@@ -350,12 +484,6 @@
             </div>
         </div>
     </div>
-
-    <footer class="footer">
-        <div class="container">
-            <p>FitMentor V2 - Evidence-based fitness coaching</p>
-        </div>
-    </footer>
 
     <script src="js/app.js"></script>
 </body>

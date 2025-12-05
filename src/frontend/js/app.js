@@ -6,10 +6,66 @@ let currentWorkoutData = null;
 let currentInputParams = null;
 let activeSwapContext = null;
 let pendingRemoval = null;
+let currentView = 'landing';
+let currentTab = 'calories';
 
 // Store values separately for each unit system
 let metricValues = { height: '', weight: '' };
 let imperialValues = { heightFt: '', heightIn: '', weight: '' };
+
+// DOM helpers
+function $(selector) {
+    return document.querySelector(selector);
+}
+
+function $$(selector) {
+    return document.querySelectorAll(selector);
+}
+
+function show(el) {
+    if (typeof el === 'string') el = $(el);
+    if (el) el.style.display = '';
+}
+
+function hide(el) {
+    if (typeof el === 'string') el = $(el);
+    if (el) el.style.display = 'none';
+}
+
+// View & Tab Management
+function showView(view) {
+    currentView = view;
+    if (view === 'landing') {
+        show('#landing-view');
+        hide('#app-view');
+        document.body.style.overflow = '';
+    } else {
+        hide('#landing-view');
+        show('#app-view');
+        document.body.style.overflow = '';
+        // Reinitialize icons in app view
+        lucide.createIcons();
+    }
+}
+
+function switchTab(tabName) {
+    if (tabName === 'progress') return; // Disabled tab
+
+    currentTab = tabName;
+
+    // Update tab buttons
+    $$('.app-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.tab === tabName);
+    });
+
+    // Update tab content
+    $$('.tab-content').forEach(content => {
+        content.classList.toggle('active', content.id === `tab-${tabName}`);
+    });
+
+    // Reinitialize icons in new tab
+    lucide.createIcons();
+}
 
 // Exercise swap helpers
 function getAlternativeExercises(exerciseName) {
@@ -42,25 +98,6 @@ function cmToFtIn(cm) {
     const ft = Math.floor(totalInches / 12);
     const inches = Math.round(totalInches % 12);
     return { ft, in: inches };
-}
-
-// DOM helpers
-function $(selector) {
-    return document.querySelector(selector);
-}
-
-function $$(selector) {
-    return document.querySelectorAll(selector);
-}
-
-function show(el) {
-    if (typeof el === 'string') el = $(el);
-    el.style.display = '';
-}
-
-function hide(el) {
-    if (typeof el === 'string') el = $(el);
-    el.style.display = 'none';
 }
 
 // API functions
@@ -207,6 +244,9 @@ function renderWorkoutPlan(data, scrollToResults = true) {
         });
     });
 
+    // Reinitialize icons after rendering
+    lucide.createIcons();
+
     show('#workout-results');
     if (scrollToResults) {
         $('#workout-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -221,6 +261,7 @@ function showExerciseModal(exercise) {
     $('#modal-equipment').textContent = exercise.equipment.join(', ');
     $('#modal-rest').textContent = `${exercise.rest} seconds`;
     show('#exercise-modal');
+    lucide.createIcons();
 }
 
 function hideExerciseModal() {
@@ -509,6 +550,7 @@ function showSaveModal() {
     show('#save-workout-form');
     show('#save-modal');
     $('#save-name').focus();
+    lucide.createIcons();
 }
 
 function hideSaveModal() {
@@ -549,6 +591,7 @@ async function handleSaveSubmit(e) {
         hide('#save-workout-form');
         $('#saved-name').textContent = result.name;
         show('#save-success');
+        lucide.createIcons();
     } catch (err) {
         const errorEl = $('#save-error');
         errorEl.textContent = err.message;
@@ -627,6 +670,9 @@ async function handleLoadWorkout() {
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
+    // Initialize Lucide icons
+    lucide.createIcons();
+
     // Load exercises for modal
     try {
         exercisesCache = await fetchExercises();
@@ -634,33 +680,75 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.warn('Could not load exercises:', err.message);
     }
 
+    // View navigation
+    const goToApp = () => {
+        showView('app');
+        window.scrollTo(0, 0);
+    };
+
+    $('#nav-get-started')?.addEventListener('click', goToApp);
+    $('#hero-get-started')?.addEventListener('click', goToApp);
+
+    // Tool cards on landing page
+    $('#tool-calories')?.addEventListener('click', () => {
+        showView('app');
+        switchTab('calories');
+        window.scrollTo(0, 0);
+    });
+
+    $('#tool-workout')?.addEventListener('click', () => {
+        showView('app');
+        switchTab('workout');
+        window.scrollTo(0, 0);
+    });
+
+    $('#back-to-home')?.addEventListener('click', () => {
+        showView('landing');
+        window.scrollTo(0, 0);
+    });
+
+    $('#app-brand')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        showView('landing');
+        window.scrollTo(0, 0);
+    });
+
+    // Tab navigation
+    $$('.app-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            if (!tab.disabled) {
+                switchTab(tab.dataset.tab);
+            }
+        });
+    });
+
     // Unit toggle
-    $('.unit-toggle').addEventListener('click', handleUnitToggle);
+    $('.unit-toggle')?.addEventListener('click', handleUnitToggle);
 
     // Forms
-    $('#calorie-form').addEventListener('submit', handleCalorieSubmit);
-    $('#workout-form').addEventListener('submit', handleWorkoutSubmit);
+    $('#calorie-form')?.addEventListener('submit', handleCalorieSubmit);
+    $('#workout-form')?.addEventListener('submit', handleWorkoutSubmit);
 
     // Exercise Modal
-    $('#exercise-modal .modal-overlay').addEventListener('click', hideExerciseModal);
-    $('#exercise-modal .modal-close').addEventListener('click', hideExerciseModal);
+    $('#exercise-modal .modal-overlay')?.addEventListener('click', hideExerciseModal);
+    $('#exercise-modal .modal-close')?.addEventListener('click', hideExerciseModal);
 
     // Save workout
-    $('#save-workout-btn').addEventListener('click', showSaveModal);
-    $('#save-modal .modal-overlay').addEventListener('click', hideSaveModal);
-    $('#save-modal-close').addEventListener('click', hideSaveModal);
-    $('#save-cancel').addEventListener('click', hideSaveModal);
-    $('#save-done').addEventListener('click', () => {
+    $('#save-workout-btn')?.addEventListener('click', showSaveModal);
+    $('#save-modal .modal-overlay')?.addEventListener('click', hideSaveModal);
+    $('#save-modal-close')?.addEventListener('click', hideSaveModal);
+    $('#save-cancel')?.addEventListener('click', hideSaveModal);
+    $('#save-done')?.addEventListener('click', () => {
         hideSaveModal();
         resetSaveModal();
     });
-    $('#save-workout-form').addEventListener('submit', handleSaveSubmit);
-    $('#save-name').addEventListener('input', handleNameInput);
+    $('#save-workout-form')?.addEventListener('submit', handleSaveSubmit);
+    $('#save-name')?.addEventListener('input', handleNameInput);
 
     // Load workout
-    $('#load-toggle').addEventListener('click', toggleLoadForm);
-    $('#load-btn').addEventListener('click', handleLoadWorkout);
-    $('#load-name').addEventListener('keydown', (e) => {
+    $('#load-toggle')?.addEventListener('click', toggleLoadForm);
+    $('#load-btn')?.addEventListener('click', handleLoadWorkout);
+    $('#load-name')?.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
             handleLoadWorkout();
@@ -668,9 +756,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // Confirm remove modal
-    $('#confirm-remove-modal .modal-overlay').addEventListener('click', hideConfirmRemoveModal);
-    $('#confirm-cancel').addEventListener('click', hideConfirmRemoveModal);
-    $('#confirm-remove').addEventListener('click', removeExercise);
+    $('#confirm-remove-modal .modal-overlay')?.addEventListener('click', hideConfirmRemoveModal);
+    $('#confirm-cancel')?.addEventListener('click', hideConfirmRemoveModal);
+    $('#confirm-remove')?.addEventListener('click', removeExercise);
 
     // Escape key handling
     document.addEventListener('keydown', (e) => {
@@ -685,8 +773,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Swap popup - close when clicking outside
     document.addEventListener('click', (e) => {
         const popup = $('#swap-popup');
-        if (popup.style.display !== 'none' && !popup.contains(e.target) && !e.target.closest('.swap-btn')) {
+        if (popup && popup.style.display !== 'none' && !popup.contains(e.target) && !e.target.closest('.swap-btn')) {
             hideSwapPopup();
         }
+    });
+
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+            const href = this.getAttribute('href');
+            if (href === '#') return;
+
+            const target = document.querySelector(href);
+            if (target && currentView === 'landing') {
+                e.preventDefault();
+                target.scrollIntoView({ behavior: 'smooth' });
+            }
+        });
     });
 });

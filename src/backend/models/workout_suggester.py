@@ -64,6 +64,8 @@ GENDER_EXCLUDED_SUBREGIONS = {
 }
 
 # Split configurations with split_type for intelligent sub-region targeting
+# variant: identifies A/B/C variants of the same workout type
+# variant_group: groups days that should share top-tier exercises but differ in accessories
 SPLITS = {
     3: {
         "name": "Full Body 3x/week",
@@ -71,16 +73,22 @@ SPLITS = {
             {
                 "name": "Full Body A",
                 "split_type": "full_body",
+                "variant": "A",
+                "variant_group": "full_body",
                 "muscle_groups": ["chest", "back", "legs", "shoulders", "arms"],
             },
             {
                 "name": "Full Body B",
                 "split_type": "full_body",
+                "variant": "B",
+                "variant_group": "full_body",
                 "muscle_groups": ["chest", "back", "legs", "shoulders", "arms"],
             },
             {
                 "name": "Full Body C",
                 "split_type": "full_body",
+                "variant": "C",
+                "variant_group": "full_body",
                 "muscle_groups": ["chest", "back", "legs", "shoulders", "arms"],
             },
         ],
@@ -91,21 +99,29 @@ SPLITS = {
             {
                 "name": "Upper A",
                 "split_type": "upper",
+                "variant": "A",
+                "variant_group": "upper",
                 "muscle_groups": ["chest", "back", "shoulders", "arms"],
             },
             {
                 "name": "Lower A",
                 "split_type": "legs",
+                "variant": "A",
+                "variant_group": "lower",
                 "muscle_groups": ["legs"],
             },
             {
                 "name": "Upper B",
                 "split_type": "upper",
+                "variant": "B",
+                "variant_group": "upper",
                 "muscle_groups": ["chest", "back", "shoulders", "arms"],
             },
             {
                 "name": "Lower B",
                 "split_type": "legs",
+                "variant": "B",
+                "variant_group": "lower",
                 "muscle_groups": ["legs"],
             },
         ],
@@ -146,31 +162,43 @@ SPLITS = {
             {
                 "name": "Push A",
                 "split_type": "push",
+                "variant": "A",
+                "variant_group": "push",
                 "muscle_groups": ["chest", "shoulders", "arms"],
             },
             {
                 "name": "Pull A",
                 "split_type": "pull",
+                "variant": "A",
+                "variant_group": "pull",
                 "muscle_groups": ["back", "arms"],
             },
             {
                 "name": "Legs A",
                 "split_type": "legs",
+                "variant": "A",
+                "variant_group": "legs",
                 "muscle_groups": ["legs"],
             },
             {
                 "name": "Push B",
                 "split_type": "push",
+                "variant": "B",
+                "variant_group": "push",
                 "muscle_groups": ["chest", "shoulders", "arms"],
             },
             {
                 "name": "Pull B",
                 "split_type": "pull",
+                "variant": "B",
+                "variant_group": "pull",
                 "muscle_groups": ["back", "arms"],
             },
             {
                 "name": "Legs B",
                 "split_type": "legs",
+                "variant": "B",
+                "variant_group": "legs",
                 "muscle_groups": ["legs"],
             },
         ],
@@ -298,7 +326,8 @@ def get_muscle_groups_for_day(day_info, gender, split_type):
     return groups, target_subregions
 
 
-def build_workout_day(day_info, selector, goal_params, experience, gender):
+def build_workout_day(day_info, selector, goal_params, experience, gender,
+                      excluded_lower_tier_ids=None):
     """Build a single workout day with intelligent exercise selection.
 
     Uses the new ExerciseSelector for:
@@ -307,11 +336,26 @@ def build_workout_day(day_info, selector, goal_params, experience, gender):
     - Movement pattern redundancy prevention
     - Gender-specific volume (females: more legs/glutes)
     - Enforces min 4 and max 9 exercises per workout
+    - Variant-based exercise differentiation (excludes lower-tier exercises
+      used in other variants while keeping S+/S tier consistent)
+
+    Args:
+        day_info: Day configuration from SPLITS
+        selector: ExerciseSelector instance
+        goal_params: Goal-specific parameters (sets, reps, rest)
+        experience: User experience level
+        gender: User gender
+        excluded_lower_tier_ids: Set of exercise IDs to exclude for variant
+                                 differentiation. S+/S tier exercises are
+                                 never excluded.
     """
     exercises = []
     all_warnings = []
     volume_mult = EXPERIENCE_MULTIPLIERS[experience]
     gender_adjustments = GENDER_VOLUME_ADJUSTMENTS[gender]
+
+    if excluded_lower_tier_ids is None:
+        excluded_lower_tier_ids = set()
 
     split_type = day_info.get("split_type", "full_body")
     muscle_groups, target_subregions = get_muscle_groups_for_day(
@@ -340,10 +384,12 @@ def build_workout_day(day_info, selector, goal_params, experience, gender):
         selector.config["exercises_per_muscle"] = adjusted_count
 
         # Select exercises with intelligent algorithm
+        # Pass excluded_lower_tier_ids for variant differentiation
         selected, used_patterns, warnings = selector.select_for_muscle_group(
             muscle_group,
             used_patterns=used_patterns,
             target_subregions=sub_targets,
+            excluded_exercise_ids=excluded_lower_tier_ids,
         )
 
         # Restore original config
@@ -399,6 +445,7 @@ def build_workout_day(day_info, selector, goal_params, experience, gender):
                 fill_subregions.remove("glutes")
                 fill_subregions.insert(0, "glutes")
 
+        # First pass: try to fill respecting exclusions
         for subregion in fill_subregions:
             if needed <= 0:
                 break
@@ -406,6 +453,12 @@ def build_workout_day(day_info, selector, goal_params, experience, gender):
             for exercise in candidates:
                 if exercise["id"] in selected_ids:
                     continue
+                # Skip excluded exercises (for variant differentiation)
+                # but S+/S tier exercises are never excluded
+                if exercise["id"] in excluded_lower_tier_ids:
+                    tier = exercise.get("nippard_tier")
+                    if tier not in ("S+", "S"):
+                        continue
                 ex_pattern = get_movement_pattern(exercise["id"])
                 if ex_pattern and ex_pattern in used_patterns:
                     continue
@@ -416,6 +469,27 @@ def build_workout_day(day_info, selector, goal_params, experience, gender):
                 needed -= 1
                 if needed <= 0:
                     break
+
+        # Second pass: if still not enough, allow excluded exercises
+        # (prioritize meeting minimum over variant differentiation)
+        if needed > 0:
+            for subregion in fill_subregions:
+                if needed <= 0:
+                    break
+                candidates = selector._get_exercises_for_subregion(subregion)
+                for exercise in candidates:
+                    if exercise["id"] in selected_ids:
+                        continue
+                    ex_pattern = get_movement_pattern(exercise["id"])
+                    if ex_pattern and ex_pattern in used_patterns:
+                        continue
+                    all_selected.append(exercise)
+                    selected_ids.add(exercise["id"])
+                    if ex_pattern:
+                        used_patterns.add(ex_pattern)
+                    needed -= 1
+                    if needed <= 0:
+                        break
 
     # Re-sort after adding minimum exercises: compounds first
     compounds = [e for e in all_selected if e.get("type") == "compound"]
@@ -448,6 +522,7 @@ def build_workout_day(day_info, selector, goal_params, experience, gender):
 
     return {
         "day": day_info["name"],
+        "variant": day_info.get("variant"),
         "split_type": split_type,
         "muscle_groups": muscle_groups,
         "exercises": exercises,
@@ -463,6 +538,8 @@ def suggest(data):
     - No redundant movement patterns
     - Higher-tier exercises prioritized
     - Difficulty appropriate for experience level
+    - Variant-based exercise variation (S+/S exercises stay consistent
+      across variants, lower-tier exercises differ)
     """
     validate_input(data)
 
@@ -480,11 +557,43 @@ def suggest(data):
     workouts = []
     all_plan_warnings = []
 
+    # Track lower-tier exercises used per variant group
+    # Structure: {"push": {"A": set(), "B": set()}, ...}
+    # This ensures variant B excludes exercises from variant A (except S+/S tier)
+    variant_lower_tier_used = {}
+
     for day_info in split["days"]:
+        variant_group = day_info.get("variant_group")
+        variant = day_info.get("variant")
+
+        # Determine which exercises to exclude for this variant
+        excluded_lower_tier_ids = set()
+        if variant_group and variant:
+            if variant_group not in variant_lower_tier_used:
+                variant_lower_tier_used[variant_group] = {}
+
+            # Exclude lower-tier exercises from previous variants in this group
+            for prev_variant, prev_ids in variant_lower_tier_used[variant_group].items():
+                if prev_variant != variant:
+                    excluded_lower_tier_ids.update(prev_ids)
+
         workout = build_workout_day(
             day_info, selector, goal_params,
-            data["experience"], data["gender"]
+            data["experience"], data["gender"],
+            excluded_lower_tier_ids=excluded_lower_tier_ids
         )
+
+        # Track lower-tier exercises used in this workout for future variants
+        if variant_group and variant:
+            lower_tier_ids = selector.get_lower_tier_exercise_ids(
+                [e for e in workout["exercises"]]
+            )
+            # Note: workout["exercises"] has processed format, need to check tier field
+            lower_tier_ids = {
+                e["id"] for e in workout["exercises"]
+                if e.get("tier") not in ("S+", "S")
+            }
+            variant_lower_tier_used[variant_group][variant] = lower_tier_ids
 
         # Validate the workout against targeted sub-regions (split-aware)
         target_subs = SPLIT_SUBREGIONS.get(workout["split_type"], {})

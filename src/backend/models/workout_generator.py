@@ -205,11 +205,20 @@ class ExerciseSelector:
 
         return selected, used_patterns
 
+    def get_lower_tier_exercise_ids(self, exercises: list[dict]) -> set[str]:
+        """Return IDs of exercises that are NOT S+ or S tier.
+
+        Used for variant-based exercise variation - top-tier exercises are shared
+        across variants while lower-tier exercises differ.
+        """
+        return {e["id"] for e in exercises if e.get("nippard_tier") not in ("S+", "S")}
+
     def select_for_muscle_group(
         self,
         muscle_group: str,
         used_patterns: set[str] | None = None,
         target_subregions: list[str] | None = None,
+        excluded_exercise_ids: set[str] | None = None,
     ) -> tuple[list[dict], set[str], list[str]]:
         """Select exercises for a muscle group with intelligent coverage.
 
@@ -217,12 +226,17 @@ class ExerciseSelector:
             muscle_group: The muscle group (chest, arms, shoulders, back, legs)
             used_patterns: Movement patterns already used (for redundancy check)
             target_subregions: Specific sub-regions to target (for split workouts)
+            excluded_exercise_ids: Exercise IDs to exclude (for variant differentiation).
+                                   Note: S+/S tier exercises ignore this exclusion to
+                                   maintain consistency across variants.
 
         Returns:
             Tuple of (selected_exercises, updated_used_patterns, warnings)
         """
         if used_patterns is None:
             used_patterns = set()
+        if excluded_exercise_ids is None:
+            excluded_exercise_ids = set()
 
         warnings = []
         selected = []
@@ -244,6 +258,8 @@ class ExerciseSelector:
 
         # Phase 0: ALWAYS include top-tier (S+, S) exercises first - these are the "main" lifts
         # Use pattern diversity to ensure variety (e.g., both vertical pull AND horizontal row for back)
+        # NOTE: Top-tier exercises are NOT excluded even if in excluded_exercise_ids
+        # This ensures consistency across workout variants
         top_tier_exercises = self._get_top_tier_exercises(subregions)
         phase0_selected, used_patterns = self._select_with_pattern_diversity(
             top_tier_exercises, target_count, used_patterns, muscle_group
@@ -255,6 +271,7 @@ class ExerciseSelector:
             covered_subregions.add(exercise["sub_region"])
 
         # Phase 1: Ensure each target sub-region has at least one exercise
+        # Respects excluded_exercise_ids for variant differentiation
         for subregion in subregions:
             if len(selected) >= target_count:
                 break
@@ -266,6 +283,10 @@ class ExerciseSelector:
 
             for exercise in candidates:
                 if exercise["id"] in selected_ids:
+                    continue
+
+                # Skip excluded exercises (for variant differentiation)
+                if exercise["id"] in excluded_exercise_ids:
                     continue
 
                 pattern = get_movement_pattern(exercise["id"])
@@ -287,6 +308,7 @@ class ExerciseSelector:
                     )
 
         # Phase 2: Fill remaining volume with best available exercises
+        # Respects excluded_exercise_ids for variant differentiation
         while len(selected) < target_count:
             best_candidate = None
             best_tier = -1
@@ -297,6 +319,10 @@ class ExerciseSelector:
 
                 for exercise in candidates:
                     if exercise["id"] in selected_ids:
+                        continue
+
+                    # Skip excluded exercises (for variant differentiation)
+                    if exercise["id"] in excluded_exercise_ids:
                         continue
 
                     pattern = get_movement_pattern(exercise["id"])

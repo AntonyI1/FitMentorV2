@@ -431,5 +431,206 @@ class TestSubregionCoverage:
         assert "triceps_long_head" in covered or "triceps_lateral_medial" in covered
 
 
+class TestWorkoutDayVariation:
+    """Test workout day variation between A/B/C variants."""
+
+    def test_ppl_variants_share_top_tier_exercises(self):
+        """Push A and Push B should have the same S+/S tier exercises."""
+        result = suggest({
+            "gender": "male",
+            "goal": "hypertrophy",
+            "experience": "intermediate",
+            "equipment": ["barbell", "dumbbell", "cable", "bench", "rack", "machine"],
+            "days_per_week": 6,
+        })
+
+        # Find Push A and Push B workouts
+        push_a = next(w for w in result["workouts"] if w["day"] == "Push A")
+        push_b = next(w for w in result["workouts"] if w["day"] == "Push B")
+
+        # Get S+/S tier exercises from each
+        push_a_top_tier = {e["id"] for e in push_a["exercises"] if e["tier"] in ("S+", "S")}
+        push_b_top_tier = {e["id"] for e in push_b["exercises"] if e["tier"] in ("S+", "S")}
+
+        # Top-tier exercises should be identical
+        assert push_a_top_tier == push_b_top_tier, \
+            f"Top-tier exercises differ: A={push_a_top_tier}, B={push_b_top_tier}"
+
+    def test_ppl_variants_have_different_lower_tier_exercises(self):
+        """Push A and Push B should have different A+ and below exercises."""
+        result = suggest({
+            "gender": "male",
+            "goal": "hypertrophy",
+            "experience": "intermediate",
+            "equipment": ["barbell", "dumbbell", "cable", "bench", "rack", "machine"],
+            "days_per_week": 6,
+        })
+
+        # Find Push A and Push B workouts
+        push_a = next(w for w in result["workouts"] if w["day"] == "Push A")
+        push_b = next(w for w in result["workouts"] if w["day"] == "Push B")
+
+        # Get lower-tier exercises from each
+        push_a_lower = {e["id"] for e in push_a["exercises"] if e["tier"] not in ("S+", "S")}
+        push_b_lower = {e["id"] for e in push_b["exercises"] if e["tier"] not in ("S+", "S")}
+
+        # Lower-tier exercises should be different (no overlap)
+        overlap = push_a_lower & push_b_lower
+        assert len(overlap) == 0, \
+            f"Lower-tier exercises overlap: {overlap}"
+
+    def test_full_body_variants_have_different_accessories(self):
+        """Full Body A/B/C should share main lifts but differ in accessories."""
+        result = suggest({
+            "gender": "male",
+            "goal": "hypertrophy",
+            "experience": "intermediate",
+            "equipment": ["barbell", "dumbbell", "cable", "bench", "rack", "machine"],
+            "days_per_week": 3,
+        })
+
+        # Get all three full body workouts
+        fb_a = next(w for w in result["workouts"] if w["day"] == "Full Body A")
+        fb_b = next(w for w in result["workouts"] if w["day"] == "Full Body B")
+        fb_c = next(w for w in result["workouts"] if w["day"] == "Full Body C")
+
+        # Get top-tier exercises
+        a_top = {e["id"] for e in fb_a["exercises"] if e["tier"] in ("S+", "S")}
+        b_top = {e["id"] for e in fb_b["exercises"] if e["tier"] in ("S+", "S")}
+        c_top = {e["id"] for e in fb_c["exercises"] if e["tier"] in ("S+", "S")}
+
+        # Top-tier should be consistent across all three
+        assert a_top == b_top == c_top, "Top-tier exercises should be same across variants"
+
+        # Get lower-tier exercises
+        a_lower = {e["id"] for e in fb_a["exercises"] if e["tier"] not in ("S+", "S")}
+        b_lower = {e["id"] for e in fb_b["exercises"] if e["tier"] not in ("S+", "S")}
+        c_lower = {e["id"] for e in fb_c["exercises"] if e["tier"] not in ("S+", "S")}
+
+        # Lower-tier should differ between variants
+        # A and B should have no overlap
+        ab_overlap = a_lower & b_lower
+        assert len(ab_overlap) == 0, f"A and B have overlapping lower-tier: {ab_overlap}"
+
+        # A and C should have no overlap
+        ac_overlap = a_lower & c_lower
+        assert len(ac_overlap) == 0, f"A and C have overlapping lower-tier: {ac_overlap}"
+
+    def test_upper_lower_variants_differ(self):
+        """Upper A and Upper B should have same top-tier but different accessories."""
+        result = suggest({
+            "gender": "male",
+            "goal": "hypertrophy",
+            "experience": "intermediate",
+            "equipment": ["barbell", "dumbbell", "cable", "bench", "rack", "machine"],
+            "days_per_week": 4,
+        })
+
+        # Find Upper A and Upper B
+        upper_a = next(w for w in result["workouts"] if w["day"] == "Upper A")
+        upper_b = next(w for w in result["workouts"] if w["day"] == "Upper B")
+
+        # Top-tier should match
+        a_top = {e["id"] for e in upper_a["exercises"] if e["tier"] in ("S+", "S")}
+        b_top = {e["id"] for e in upper_b["exercises"] if e["tier"] in ("S+", "S")}
+        assert a_top == b_top, "Upper A and B should share top-tier exercises"
+
+        # Lower-tier should differ
+        a_lower = {e["id"] for e in upper_a["exercises"] if e["tier"] not in ("S+", "S")}
+        b_lower = {e["id"] for e in upper_b["exercises"] if e["tier"] not in ("S+", "S")}
+        overlap = a_lower & b_lower
+        assert len(overlap) == 0, f"Upper A and B should have different lower-tier: {overlap}"
+
+    def test_variant_exclusion_respects_equipment(self):
+        """With limited equipment, variation should degrade gracefully."""
+        result = suggest({
+            "gender": "male",
+            "goal": "hypertrophy",
+            "experience": "intermediate",
+            "equipment": ["dumbbell", "bench"],  # Very limited equipment
+            "days_per_week": 6,
+        })
+
+        # Should not crash with limited equipment
+        assert len(result["workouts"]) == 6
+
+        # All workouts should still have minimum exercises
+        # (may need to reuse some excluded exercises to meet minimum)
+        for workout in result["workouts"]:
+            assert len(workout["exercises"]) >= 4, \
+                f"{workout['day']} has too few exercises"
+
+    def test_variant_subregion_coverage_maintained(self):
+        """Each variant should still cover required sub-regions."""
+        result = suggest({
+            "gender": "male",
+            "goal": "hypertrophy",
+            "experience": "intermediate",
+            "equipment": ["barbell", "dumbbell", "cable", "bench", "rack", "machine"],
+            "days_per_week": 6,
+        })
+
+        for workout in result["workouts"]:
+            if workout["split_type"] == "push":
+                sub_regions = {e["sub_region"] for e in workout["exercises"]}
+                # Push should hit chest, shoulders, triceps sub-regions
+                assert any("chest" in sr or sr in ["mid_chest", "upper_chest", "lower_chest"]
+                          for sr in sub_regions), \
+                    f"{workout['day']} missing chest sub-region"
+                assert any("triceps" in sr for sr in sub_regions), \
+                    f"{workout['day']} missing triceps sub-region"
+
+    def test_workout_includes_variant_field(self):
+        """Workouts should include the variant field."""
+        result = suggest({
+            "gender": "male",
+            "goal": "hypertrophy",
+            "experience": "intermediate",
+            "equipment": ["barbell", "dumbbell", "cable", "bench", "rack"],
+            "days_per_week": 6,
+        })
+
+        push_a = next(w for w in result["workouts"] if w["day"] == "Push A")
+        push_b = next(w for w in result["workouts"] if w["day"] == "Push B")
+
+        assert push_a.get("variant") == "A"
+        assert push_b.get("variant") == "B"
+
+    def test_five_day_split_no_variants(self):
+        """5-day PPL has no duplicate day types, so no variation needed."""
+        result = suggest({
+            "gender": "male",
+            "goal": "hypertrophy",
+            "experience": "intermediate",
+            "equipment": ["barbell", "dumbbell", "cable", "bench", "rack"],
+            "days_per_week": 5,
+        })
+
+        # Check that workouts without variant_group work correctly
+        for workout in result["workouts"]:
+            # Should still have exercises
+            assert len(workout["exercises"]) >= 4
+            # variant field should be None for 5-day split
+            assert workout.get("variant") is None
+
+    def test_exercise_count_consistency_across_variants(self):
+        """Variants of same day type should have similar exercise counts."""
+        result = suggest({
+            "gender": "male",
+            "goal": "hypertrophy",
+            "experience": "intermediate",
+            "equipment": ["barbell", "dumbbell", "cable", "bench", "rack", "machine"],
+            "days_per_week": 6,
+        })
+
+        push_a = next(w for w in result["workouts"] if w["day"] == "Push A")
+        push_b = next(w for w in result["workouts"] if w["day"] == "Push B")
+
+        # Exercise counts should be within 1 of each other
+        count_diff = abs(len(push_a["exercises"]) - len(push_b["exercises"]))
+        assert count_diff <= 1, \
+            f"Push A has {len(push_a['exercises'])} exercises, Push B has {len(push_b['exercises'])}"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

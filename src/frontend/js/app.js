@@ -1,6 +1,7 @@
 const API_URL = 'http://localhost:5000';
 
 let currentUnit = 'metric';
+let currentTheme = 'dark';
 let exercisesCache = [];
 let currentWorkoutData = null;
 let currentInputParams = null;
@@ -30,6 +31,45 @@ function show(el) {
 function hide(el) {
     if (typeof el === 'string') el = $(el);
     if (el) el.style.display = 'none';
+}
+
+// Theme Management
+function initTheme() {
+    const savedTheme = localStorage.getItem('fitmentor-theme');
+    if (savedTheme) {
+        currentTheme = savedTheme;
+    }
+    applyTheme(currentTheme);
+}
+
+function applyTheme(theme) {
+    currentTheme = theme;
+
+    if (theme === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+    } else {
+        document.documentElement.removeAttribute('data-theme');
+    }
+
+    updateThemeIcons();
+    localStorage.setItem('fitmentor-theme', theme);
+}
+
+function toggleTheme() {
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    applyTheme(newTheme);
+}
+
+function updateThemeIcons() {
+    const isDark = currentTheme === 'dark';
+
+    $$('.theme-icon-dark').forEach(icon => {
+        icon.style.display = isDark ? '' : 'none';
+    });
+
+    $$('.theme-icon-light').forEach(icon => {
+        icon.style.display = isDark ? 'none' : '';
+    });
 }
 
 // View & Tab Management
@@ -670,8 +710,14 @@ async function handleLoadWorkout() {
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
+    // Initialize theme from localStorage
+    initTheme();
+
     // Initialize Lucide icons
     lucide.createIcons();
+
+    // Update theme icons after Lucide creates them
+    updateThemeIcons();
 
     // Load exercises for modal
     try {
@@ -688,6 +734,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     $('#nav-get-started')?.addEventListener('click', goToApp);
     $('#hero-get-started')?.addEventListener('click', goToApp);
+
+    // Theme toggle
+    $('#theme-toggle-landing')?.addEventListener('click', toggleTheme);
+    $('#theme-toggle-app')?.addEventListener('click', toggleTheme);
 
     // Tool cards on landing page
     $('#tool-calories')?.addEventListener('click', () => {
